@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "check": "node --check server.js && node --check server-v0.1b.js && node --check public/app.js && node --check public/app-v0.1b.js && node --check public/app-v0.2.js && node --check public/app-v0.3.js"
+    "check": "node --check server.js && node --check server-v0.1b.js && node --check public/app.js && node --check public/app-v0.1b.js && node --check public/app-v0.2.js && node --check public/app-v0.3.js && node --check public/app-v0.3-bridge.js"
   },
   "engines": {
     "node": ">=20"
