@@ -22,6 +22,8 @@
 
 ## 开发与验证
 
+开发与 CI 使用 Node.js 22 或更新版本（Workers 测试运行时的要求）。
+
 1. `npm ci`
 2. `npm run build`
 3. `npm run sites:preview`：独立的 Workers 预览，默认 `http://127.0.0.1:3002`，数据位于 `.sites-runtime/`，不改动本机收藏库。
