@@ -89,6 +89,7 @@ function refreshPolishAfterLegacyChanges() {
 }
 
 ensurePolishMarkup();
+window.addEventListener('v3collectionchange', loadPolishData);
 loadPolishData();
 syncPolishVisibility();
 refreshPolishAfterLegacyChanges();

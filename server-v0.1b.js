@@ -6,6 +6,7 @@ const multer = require('multer');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const path = require('path');
+const APP_VERSION = require('./package.json').version;
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -17,6 +18,8 @@ const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB || 8);
 const MAX_BACKUP_MB = Number(process.env.MAX_BACKUP_MB || 100);
 const STATUSES = new Set(['owned', 'wishlist', 'missing', 'preordered']);
 const REQUIRED_TABLES = ['groups', 'albums', 'album_versions', 'collection'];
+const PROFILE_TEXT_LIMITS = { name: 100, bio: 2000, avatar: 2048, hero_cover: 2048, diary: 20000 };
+const EMPTY_PROFILE = { id: 1, name: '', bio: '', avatar: '', hero_cover: '', diary: '', favorite_group_ids: [] };
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -99,6 +102,40 @@ function initializeDatabase(database) {
       )
     `);
 
+    database.run(`CREATE TABLE IF NOT EXISTS album_tracks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      album_id INTEGER NOT NULL,
+      disc_no INTEGER NOT NULL DEFAULT 1,
+      track_no INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      note TEXT DEFAULT '',
+      source TEXT DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE,
+      UNIQUE(album_id, disc_no, track_no)
+    )`);
+    database.run(`CREATE TABLE IF NOT EXISTS catalog_imports (
+      catalog_key TEXT PRIMARY KEY,
+      imported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      item_count INTEGER NOT NULL DEFAULT 0
+    )`);
+    database.run(`CREATE TABLE IF NOT EXISTS profile (
+      id INTEGER PRIMARY KEY CHECK(id = 1),
+      name TEXT NOT NULL DEFAULT '',
+      bio TEXT NOT NULL DEFAULT '',
+      avatar TEXT NOT NULL DEFAULT '',
+      hero_cover TEXT NOT NULL DEFAULT '',
+      diary TEXT NOT NULL DEFAULT '',
+      favorite_group_ids TEXT NOT NULL DEFAULT '[]'
+    )`);
+    database.run('INSERT OR IGNORE INTO profile (id) VALUES (1)');
+    database.run(`CREATE TRIGGER IF NOT EXISTS prune_profile_favorites AFTER DELETE ON groups
+      BEGIN
+        UPDATE profile SET favorite_group_ids = (
+          SELECT json_group_array(value) FROM json_each(profile.favorite_group_ids) WHERE value != OLD.id
+        ) WHERE id = 1;
+      END`);
+    database.run('CREATE INDEX IF NOT EXISTS idx_album_tracks_album_id ON album_tracks(album_id)');
     database.run('CREATE INDEX IF NOT EXISTS idx_albums_group_id ON albums(group_id)');
     database.run('CREATE INDEX IF NOT EXISTS idx_albums_release_date ON albums(release_date)');
     database.run('CREATE INDEX IF NOT EXISTS idx_versions_album_id ON album_versions(album_id)');
@@ -163,11 +200,48 @@ function asOptionalPrice(value, fallback = null) {
 }
 
 function handleDbError(res, error) {
+  if (error?.status === 400) return res.status(400).json({ error: error.message });
   console.error(error);
   if (error && error.code === 'SQLITE_CONSTRAINT') {
     return res.status(409).json({ error: '数据冲突：名称重复或关联关系无效。' });
   }
   return res.status(500).json({ error: '服务器内部错误。' });
+}
+
+function validateProfile(input, groupIds) {
+  const invalid = (message) => { throw Object.assign(new Error(message), { status: 400 }); };
+  if (!input || typeof input !== 'object' || Array.isArray(input)) invalid('profile 必须是对象。');
+  if (input.id !== undefined && input.id !== 1) invalid('profile ID 必须为 1。');
+  const fields = {};
+  for (const [key, limit] of Object.entries(PROFILE_TEXT_LIMITS)) {
+    if (input[key] === undefined) continue;
+    if (typeof input[key] !== 'string' || input[key].length > limit) {
+      invalid(`${key} 必须是长度不超过 ${limit} 的文本。`);
+    }
+    fields[key] = input[key].trim();
+  }
+  if (input.favorite_group_ids !== undefined) {
+    const ids = input.favorite_group_ids;
+    if (!Array.isArray(ids) || ids.length > 1000 ||
+        ids.some((id) => !Number.isSafeInteger(id) || id <= 0 || !groupIds.has(id))) {
+      invalid('favorite_group_ids 必须包含已存在团体的正整数 ID，最多 1000 个。');
+    }
+    fields.favorite_group_ids = [...new Set(ids)];
+  }
+  return fields;
+}
+
+async function readProfile() {
+  const row = await get('SELECT * FROM profile WHERE id = 1');
+  return { ...row, favorite_group_ids: JSON.parse(row.favorite_group_ids) };
+}
+
+async function updateProfile(fields) {
+  const entries = Object.entries(fields).filter(([key]) => Object.hasOwn(PROFILE_TEXT_LIMITS, key) || key === 'favorite_group_ids');
+  if (entries.length) {
+    await run(`UPDATE profile SET ${entries.map(([key]) => `${key} = ?`).join(', ')} WHERE id = 1`,
+      entries.map(([key, value]) => key === 'favorite_group_ids' ? JSON.stringify(value) : value));
+  }
 }
 
 function removeLocalAsset(assetPath) {
@@ -269,7 +343,7 @@ function validateSQLiteBackup(filePath) {
 }
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, version: '0.1B' });
+  res.json({ ok: true, version: APP_VERSION });
 });
 
 app.get('/api/stats', async (_req, res) => {
@@ -290,9 +364,8 @@ app.get('/api/stats', async (_req, res) => {
   }
 });
 
-app.get('/api/groups', async (_req, res) => {
-  try {
-    const rows = await all(`
+async function readGroups() {
+  const rows = await all(`
       SELECT
         g.*,
         COUNT(DISTINCT a.id) AS album_count,
@@ -308,10 +381,61 @@ app.get('/api/groups', async (_req, res) => {
       ORDER BY g.name COLLATE NOCASE ASC
     `);
 
-    res.json(rows.map((row) => ({
-      ...row,
-      completion: row.version_count ? Math.round((row.owned_count / row.version_count) * 100) : 0,
-    })));
+  return rows.map((row) => ({
+    ...row,
+    completion: row.version_count ? Math.round((row.owned_count / row.version_count) * 100) : 0,
+  }));
+}
+
+app.get('/api/profile', async (_req, res) => {
+  try {
+    res.json(await readProfile());
+  } catch (error) {
+    handleDbError(res, error);
+  }
+});
+
+app.put('/api/profile', async (req, res) => {
+  try {
+    const groupIds = new Set((await all('SELECT id FROM groups')).map((group) => group.id));
+    await updateProfile(validateProfile(req.body, groupIds));
+    res.json(await readProfile());
+  } catch (error) {
+    handleDbError(res, error);
+  }
+});
+
+app.get('/api/library', async (_req, res) => {
+  try {
+    const [groups, albums, versions, tracks] = await Promise.all([
+      readGroups(),
+      all(`SELECT a.*, g.name AS group_name FROM albums a JOIN groups g ON g.id = a.group_id
+        ORDER BY CASE WHEN a.release_date = '' THEN 1 ELSE 0 END, a.release_date DESC, a.name COLLATE NOCASE, a.id`),
+      all(`SELECT v.*,
+        COALESCE(c.status, 'missing') AS status,
+        COALESCE(c.quantity, 0) AS quantity,
+        COALESCE(c.purchase_date, '') AS purchase_date,
+        c.purchase_price,
+        COALESCE(c.purchase_channel, '') AS purchase_channel,
+        COALESCE(c.purchase_currency, 'CNY') AS purchase_currency,
+        COALESCE(c.opened, 0) AS opened,
+        COALESCE(c.notes, '') AS collection_notes
+        FROM album_versions v LEFT JOIN collection c ON c.album_version_id = v.id
+        ORDER BY v.album_id, v.version_name COLLATE NOCASE, v.id`),
+      all('SELECT * FROM album_tracks ORDER BY album_id, disc_no, track_no, id'),
+    ]);
+    const albumsById = new Map(albums.map((album) => [album.id, { ...album, versions: [], tracks: [] }]));
+    for (const version of versions) albumsById.get(version.album_id)?.versions.push(version);
+    for (const track of tracks) albumsById.get(track.album_id)?.tracks.push(track);
+    res.json({ groups, albums: [...albumsById.values()] });
+  } catch (error) {
+    handleDbError(res, error);
+  }
+});
+
+app.get('/api/groups', async (_req, res) => {
+  try {
+    res.json(await readGroups());
   } catch (error) {
     handleDbError(res, error);
   }
@@ -630,18 +754,21 @@ app.post('/api/upload', (req, res) => {
 
 app.get('/api/export', async (_req, res) => {
   try {
-    const [groups, albums, albumVersions, collection] = await Promise.all([
+    const [groups, albums, albumVersions, collection, albumTracks, catalogImports, profile] = await Promise.all([
       all('SELECT * FROM groups ORDER BY id'),
       all('SELECT * FROM albums ORDER BY id'),
       all('SELECT * FROM album_versions ORDER BY id'),
       all('SELECT * FROM collection ORDER BY id'),
+      all('SELECT * FROM album_tracks ORDER BY id'),
+      all('SELECT * FROM catalog_imports ORDER BY catalog_key'),
+      readProfile(),
     ]);
     const snapshot = {
       format: 'kpop-collection-backup',
-      schema_version: 1,
-      app_version: '0.1B',
+      schema_version: 3,
+      app_version: APP_VERSION,
       exported_at: new Date().toISOString(),
-      data: { groups, albums, album_versions: albumVersions, collection },
+      data: { groups, albums, album_versions: albumVersions, collection, album_tracks: albumTracks, catalog_imports: catalogImports, profile },
     };
     const stamp = new Date().toISOString().slice(0, 10);
     res.setHeader('Content-Disposition', `attachment; filename="kpop-collection-${stamp}.json"`);
@@ -660,9 +787,23 @@ app.post('/api/import', async (req, res) => {
   for (const key of ['groups', 'albums', 'album_versions', 'collection']) {
     if (!Array.isArray(data[key])) return res.status(400).json({ error: `备份缺少 ${key} 数据。` });
   }
+  for (const key of ['album_tracks', 'catalog_imports']) {
+    if ((snapshot.schema_version >= 2 || data[key] !== undefined) && !Array.isArray(data[key])) {
+      return res.status(400).json({ error: `备份缺少或包含无效的 ${key} 数据。` });
+    }
+  }
 
+  let transactionStarted = false;
   try {
+    // Old backups have no personal data; reset to the same defaults as a new database.
+    const profile = { ...EMPTY_PROFILE, ...validateProfile(
+      snapshot.schema_version >= 3 || data.profile !== undefined ? data.profile : EMPTY_PROFILE,
+      new Set(data.groups.map((group) => Number(group.id))),
+    ) };
     await run('BEGIN IMMEDIATE TRANSACTION');
+    transactionStarted = true;
+    await run('DELETE FROM album_tracks');
+    await run('DELETE FROM catalog_imports');
     await run('DELETE FROM collection');
     await run('DELETE FROM album_versions');
     await run('DELETE FROM albums');
@@ -680,6 +821,7 @@ app.post('/api/import', async (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [row.id, row.group_id, cleanText(row.name), cleanText(row.korean_name), cleanText(row.release_date), cleanText(row.album_type), cleanText(row.cover), cleanText(row.notes), row.created_at || new Date().toISOString()]);
     }
+    await updateProfile(profile);
     for (const row of data.album_versions) {
       await run(`
         INSERT INTO album_versions (id, album_id, version_name, cover, barcode, edition_type, created_at)
@@ -708,6 +850,15 @@ app.post('/api/import', async (req, res) => {
         row.updated_at || new Date().toISOString(),
       ]);
     }
+    for (const row of data.album_tracks || []) {
+      await run(`INSERT INTO album_tracks (id, album_id, disc_no, track_no, title, note, source, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [row.id, row.album_id, row.disc_no, row.track_no,
+        cleanText(row.title), cleanText(row.note), cleanText(row.source), row.created_at || new Date().toISOString()]);
+    }
+    for (const row of data.catalog_imports || []) {
+      await run(`INSERT INTO catalog_imports (catalog_key, imported_at, item_count) VALUES (?, ?, ?)`,
+        [row.catalog_key, row.imported_at || new Date().toISOString(), row.item_count]);
+    }
     await run('COMMIT');
     res.json({ success: true, counts: {
       groups: data.groups.length,
@@ -716,7 +867,9 @@ app.post('/api/import', async (req, res) => {
       collection: data.collection.length,
     } });
   } catch (error) {
-    try { await run('ROLLBACK'); } catch (_rollbackError) {}
+    if (transactionStarted) {
+      try { await run('ROLLBACK'); } catch (_rollbackError) {}
+    }
     handleDbError(res, error);
   }
 });
@@ -775,7 +928,7 @@ app.use((error, _req, res, _next) => {
 });
 
 const server = app.listen(PORT, HOST, () => {
-  console.log(`K-pop Collection V0.1B running at http://${HOST}:${PORT}`);
+  console.log(`K-pop Collection ${APP_VERSION} running at http://${HOST}:${server.address().port}`);
   console.log(`Database: ${DB_PATH}`);
 });
 

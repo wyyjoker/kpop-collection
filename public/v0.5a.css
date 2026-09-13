@@ -6,7 +6,8 @@ body.v5a-home-active {
 body.v5a-home-active .app-shell{width:min(1540px,calc(100% - 28px));padding-top:10px}
 body.v5a-home-active .topbar{min-height:64px;padding:8px 10px;border:1px solid rgba(116,104,142,.09);border-radius:18px;background:rgba(255,253,249,.9);box-shadow:0 8px 28px rgba(124,97,123,.08);backdrop-filter:blur(20px)}
 body.v5a-home-active .brand{min-width:195px} body.v5a-home-active .brand-mark{background:linear-gradient(135deg,#ffd6e7,#d8f4e8 55%,#ddd4ff);color:#3f3a4d;border-color:rgba(92,77,116,.12)}
-body.v5a-home-active .brand strong{color:#4b455c} body.v5a-home-active .brand small{color:#9c93a7} body.v5a-home-active #backupButton,body.v5a-home-active #primaryAction{display:none!important}
+body.v5a-home-active .brand strong{color:#4b455c} body.v5a-home-active .brand small{color:#9c93a7} body.v5a-home-active #primaryAction{display:none!important}
+body.v5a-home-active #backupButton{order:19;flex-shrink:0;border-color:#ded5e4;background:#fffdf9;color:#635b70}
 body.v5a-home-active #pwaInstallButton{order:20;min-width:42px;width:42px;overflow:hidden;padding-inline:11px;border-radius:999px;background:#fff7fb;color:#7a7088;border-color:rgba(116,104,142,.12)} body.v5a-home-active #pwaInstallButton span{display:none}
 .v5a-top-nav{display:flex;align-items:center;gap:2px;margin-right:auto}.v5a-top-nav button{min-height:38px;padding:8px 13px;border:0;border-radius:10px;color:#6f687c;background:transparent;font-size:13px;font-weight:700}.v5a-top-nav button:hover,.v5a-top-nav button.active{color:#4d445c;background:#f8dce9}
 .v5a-top-search{display:flex;align-items:center;width:min(280px,24vw);min-height:40px;gap:8px;padding:0 13px;border:1px solid rgba(111,96,132,.13);border-radius:999px;background:rgba(255,255,255,.82)}.v5a-top-search span{color:#aaa1b4}.v5a-top-search input{width:100%;border:0;outline:0;background:transparent;color:#4f485a;font-size:12px}

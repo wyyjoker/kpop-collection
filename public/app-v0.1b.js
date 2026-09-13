@@ -396,6 +396,11 @@ function prepareAlbumForm(album = null) {
   els.albumForm.elements.name.value = album?.name || '';
   els.albumForm.elements.korean_name.value = album?.korean_name || '';
   els.albumForm.elements.release_date.value = album?.release_date || '';
+  const albumType = album?.album_type || '';
+  const typeSelect = els.albumForm.elements.album_type;
+  if (albumType && ![...typeSelect.options].some((option) => option.value === albumType)) {
+    typeSelect.add(new Option(albumType, albumType));
+  }
   els.albumForm.elements.album_type.value = album?.album_type || '';
   els.albumForm.elements.notes.value = album?.notes || '';
   els.albumDialog.querySelector('h2').textContent = album ? '编辑专辑' : '添加专辑';

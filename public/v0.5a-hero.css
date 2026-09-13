@@ -1,7 +1,7 @@
 html.v5a-hero-wall-active body.v5a-home-active .v5a-hero{min-height:505px;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.34)),linear-gradient(105deg,#f8dee8 0 23%,#d9f1e9 23% 38%,#dcecff 38% 69%,#f8edbd 69% 100%)}
 html.v5a-hero-wall-active body.v5a-home-active .v5a-hero>.v5a-polish-stage,html.v5a-hero-wall-active body.v5a-home-active .v5a-hero>.v5a-hero-collage,html.v5a-hero-wall-active body.v5a-home-active .v5a-hero>.v5a-hero-sticker{display:none!important}
 html.v5a-hero-wall-active .v5a-title-layered{top:19px;z-index:30;width:min(760px,62%);pointer-events:none}
-html.v5a-hero-wall-active .v5a-title-layered h1{position:relative;z-index:2;font-size:clamp(50px,5.25vw,82px);letter-spacing:-.075em;text-shadow:0 3px 0 rgba(255,255,255,.95),0 7px 18px rgba(88,65,87,.11);-webkit-text-stroke:1.8px rgba(255,255,255,.96)}
+html.v5a-hero-wall-active .v5a-title-layered h1{position:relative;z-index:2;font-size:clamp(50px,5.25vw,82px);letter-spacing:-.075em;text-shadow:0 3px 0 rgba(255,255,255,.95),0 7px 18px rgba(88,65,87,.11);-webkit-text-stroke:0;color:#2f2b38}
 html.v5a-hero-wall-active .v5a-title-layered h1::before,html.v5a-hero-wall-active .v5a-title-layered h1::after{filter:drop-shadow(0 2px 0 #fff)}
 html.v5a-hero-wall-active .v5a-title-layered p{position:relative;z-index:4;margin-top:2px;padding:2px 8px;color:#4b4353;background:rgba(255,253,249,.58);border-radius:999px;display:inline-block;backdrop-filter:blur(2px)}
 html.v5a-hero-wall-active .v5a-hero-kicker{position:relative;z-index:4;margin-bottom:1px;color:#766b80;background:rgba(255,253,249,.64);padding:3px 8px;border-radius:999px}

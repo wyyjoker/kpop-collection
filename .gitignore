@@ -7,3 +7,7 @@ public/uploads/
 *.db-wal
 .DS_Store
 Thumbs.db
+dist/
+.sites-runtime/
+.wrangler/
+*.tar.gz

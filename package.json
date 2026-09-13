@@ -5,12 +5,18 @@
   "description": "Personal K-pop album collection manager",
   "main": "server.js",
   "scripts": {
+    "build": "node scripts/build-sites.mjs",
+    "sites:preview": "node scripts/preview-sites.mjs",
+    "sites:snapshot": "node scripts/capture-sites-data.mjs",
+    "test:sites:workers": "node scripts/test-sites-workers.mjs",
+    "db:generate": "drizzle-kit generate",
+    "test": "node --test tests/*.test.js",
     "prestart": "node scripts/seed-seventeen.js",
     "start": "node server.js",
     "predev": "node scripts/seed-seventeen.js",
     "dev": "node --watch server.js",
     "seed:seventeen": "node scripts/seed-seventeen.js --force",
-    "check": "node --check server.js && node --check server-v0.1b.js && node --check scripts/seed-seventeen.js && node --check public/app.js && node --check public/app-v0.1b.js && node --check public/app-v0.2.js && node --check public/app-v0.3.js && node --check public/app-v0.3-bridge.js && node --check public/app-v0.4.js && node --check public/app-v0.5a.js && node --check public/app-v0.5a-polish.js && node --check public/app-v0.5a-hero.js && node --check public/app-v0.5a-seventeen.js && node --check public/sw.js"
+    "check": "node --check server.js && node --check server-v0.1b.js && node --check scripts/seed-seventeen.js && node --check public/app.js && node --check public/js/api.js && node --check public/js/store.js && node --check public/js/components.js && node --check public/js/pages.js && node --check public/js/dialogs.js && node --check public/app-v0.1b.js && node --check public/app-v0.2.js && node --check public/app-v0.3.js && node --check public/app-v0.3-bridge.js && node --check public/app-v0.4.js && node --check public/app-v0.5a.js && node --check public/app-v0.5a-polish.js && node --check public/app-v0.5a-hero.js && node --check public/app-v0.5a-seventeen.js && node --check public/sw.js"
   },
   "engines": {
     "node": ">=20"
@@ -21,5 +27,12 @@
     "helmet": "^8.1.0",
     "multer": "^1.4.5-lts.2",
     "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2",
+    "esbuild": "^0.28.2",
+    "miniflare": "4.20260730.0",
+    "sql.js": "^1.14.2"
   }
 }

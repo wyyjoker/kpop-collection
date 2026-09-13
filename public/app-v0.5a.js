@@ -272,6 +272,12 @@ function openV5aWishlist() {
 }
 
 function bindV5aEvents() {
+  window.addEventListener('v3collectionchange', () => {
+    v5aState.loaded = false;
+    if (document.body.classList.contains('v5a-home-active')) {
+      loadV5aData(true).catch((error) => console.warn('V0.5A refresh failed:', error));
+    }
+  });
   document.addEventListener('click', (event) => {
     const group = event.target.closest('[data-v5-group]');
     if (group) { event.preventDefault(); openV5aGroup(group.dataset.v5Group); return; }

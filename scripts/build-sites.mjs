@@ -1,0 +1,16 @@
+import { build } from 'esbuild';
+import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'..'), dist=path.join(root,'dist');
+if(path.dirname(dist)!==root||path.basename(dist)!=='dist')throw new Error('Unsafe output directory');
+const hosting=JSON.parse(await readFile(path.join(root,'.openai/hosting.json'),'utf8'));
+if(!hosting.project_id||hosting.d1!=='DB'||hosting.r2!=='BUCKET')throw new Error('Sites bindings are missing');
+await rm(dist,{recursive:true,force:true});
+await mkdir(path.join(dist,'server'),{recursive:true});
+await writeFile(path.join(dist,'server/package.json'),'\n{"type":"module"}\n');
+await mkdir(path.join(dist,'.openai'),{recursive:true});
+await cp(path.join(root,'public'),path.join(dist,'client'),{recursive:true,filter:source=>!source.startsWith(path.join(root,'public','uploads'))&&!source.endsWith('package.json')});
+await build({entryPoints:[path.join(root,'sites/worker.mjs')],outfile:path.join(dist,'server/index.js'),bundle:true,format:'esm',platform:'browser',target:'es2022',minify:true,loader:{'.sql':'text'},define:{'process':'undefined','globalThis.process':'undefined'},plugins:[{name:'exclude-sqljs-node-branches',setup(build){build.onResolve({filter:/^node:(fs|crypto)$/},args=>({path:args.path,namespace:'unreachable-node'}));build.onLoad({filter:/.*/,namespace:'unreachable-node'},()=>({contents:'throw new Error("Node-only SQL.js branch is disabled in Workers");',loader:'js'}));}}],logLevel:'info'});
+await writeFile(path.join(dist,'.openai/hosting.json'),JSON.stringify(hosting,null,2));
+await cp(path.join(root,'drizzle'),path.join(dist,'.openai/drizzle'),{recursive:true});
+console.log('Sites build ready: cloud worker, frontend, migrations.');

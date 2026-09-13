@@ -2,7 +2,8 @@ const v3State = {
   groups: [],
   details: [],
   items: [],
-  activeTab: 'wishlist',
+  activeTab: ['wishlist', 'missing', 'groups', 'years', 'status'].includes(new URLSearchParams(location.search).get('tab'))
+    ? new URLSearchParams(location.search).get('tab') : 'wishlist',
   search: '',
   groupId: 'all',
   loaded: false,
@@ -256,7 +257,7 @@ function showV3Center() {
   document.querySelector('#primaryAction')?.classList.add('v3-hidden-action');
   document.querySelectorAll('[data-v2-nav], [data-v3-nav]').forEach((button) => button.classList.remove('active'));
   document.querySelector('[data-v3-nav="center"]')?.classList.add('active');
-  history.replaceState({}, '', '/?view=collection');
+  history.replaceState({}, '', `/?view=collection&tab=${v3State.activeTab}`);
   loadV3Data(true).catch((error) => v3Toast(error.message, true));
 }
 
@@ -278,6 +279,7 @@ function bindV3Events() {
     const tab = event.target.closest('[data-v3-tab]');
     if (tab) {
       v3State.activeTab = tab.dataset.v3Tab;
+      history.replaceState({}, '', `/?view=collection&tab=${v3State.activeTab}`);
       renderV3Content();
       return;
     }

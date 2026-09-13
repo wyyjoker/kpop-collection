@@ -1,0 +1,139 @@
+/* The supplied 1491 × 1055 artwork is displayed at its original proportions.
+   Only y=77..354 belongs to the decorative hero; all controls remain real HTML. */
+body.reference-masthead .app-shell {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+body.reference-masthead .app-shell::before {
+  content: "";
+  display: block;
+  height: 25px;
+  background:
+    radial-gradient(circle at 23px 13px, #fa90ad 0 6px, transparent 6.5px),
+    radial-gradient(circle at 45px 13px, #ffcd77 0 6px, transparent 6.5px),
+    radial-gradient(circle at 67px 13px, #70d58c 0 6px, transparent 6.5px),
+    linear-gradient(110deg, #f4f0ed, #c5e6ec 24%, #c1e4f0 65%, #e3d9f5);
+}
+body.reference-masthead #siteHeader {
+  min-height: 52px;
+  height: 52px;
+  padding: 5px 24px;
+  gap: 16px;
+  background: #fffefd;
+  box-shadow: none;
+}
+body.reference-masthead #siteHeader::after {
+  display: none;
+}
+body.reference-masthead .mantra {
+  min-width: 148px;
+  font-size: 17px;
+  line-height: 1.15;
+}
+body.reference-masthead #siteHeader nav a {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 5px 12px;
+}
+body.reference-masthead .global-search {
+  width: 280px;
+}
+body.reference-masthead .header-motto {
+  font-size: 15px;
+}
+body.reference-masthead #hero.scrapbook-hero {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1491 / 277;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: #fffefd;
+  isolation: isolate;
+  overflow: visible;
+  z-index: 11;
+}
+body.reference-masthead #hero::after {
+  display: none;
+}
+.reference-hero-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.reference-custom-photo {
+  position: absolute;
+  left: 21.1%;
+  top: 43.3%;
+  width: 41%;
+  height: 51.6%;
+  clip-path: polygon(0 3%, 100% 0, 97% 99%, 1% 100%);
+}
+.reference-custom-photo img {
+  object-fit: cover;
+}
+/* In the collection reference, statistics follow the masthead immediately. */
+body[data-view="collection"] #favoriteStrip {
+  display: none;
+}
+body.reference-masthead .page-layout {
+  padding-top: 10px;
+}
+@media (min-width: 761px) and (max-width: 1200px) {
+  body.reference-masthead #siteHeader {
+    padding-inline: 16px;
+    gap: 10px;
+  }
+  body.reference-masthead .mantra {
+    min-width: 115px;
+    font-size: 14px;
+  }
+  body.reference-masthead #siteHeader nav a {
+    padding-inline: 8px;
+    font-size: 12px;
+  }
+  body.reference-masthead .global-search {
+    width: 220px;
+  }
+}
+@media (max-width: 760px) {
+  body.reference-masthead .app-shell::before {
+    height: 22px;
+  }
+  body.reference-masthead #siteHeader {
+    height: auto;
+    min-height: 83px;
+    padding: 7px 10px;
+    gap: 8px;
+  }
+  body.reference-masthead .mantra {
+    min-width: 91px;
+    font-size: 12px;
+  }
+  body.reference-masthead #siteHeader nav a {
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+  body.reference-masthead .global-search {
+    width: auto;
+  }
+  /* Narrow screens retain the title and every member, with side scenery cropped. */
+  body.reference-masthead #hero.scrapbook-hero {
+    aspect-ratio: 900 / 277;
+    overflow: hidden;
+  }
+  .reference-hero-art {
+    width: 165.666667%;
+    max-width: none;
+    margin-left: -32.833333%;
+  }
+  .reference-custom-photo {
+    left: 2.12%;
+    width: 67.92%;
+  }
+}

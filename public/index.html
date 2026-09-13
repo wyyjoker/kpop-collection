@@ -1,188 +1,49 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b0c10">
-  <meta name="application-name" content="K-pop Collection">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="K-pop Collection">
-  <title>K-pop Collection</title>
-  <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
-  <link rel="stylesheet" href="/styles.css">
-</head>
-<body>
-  <div class="app-shell">
-    <header class="topbar">
-      <button id="backButton" class="icon-button hidden" type="button" aria-label="返回">←</button>
-      <div class="brand" id="brandHome" role="button" tabindex="0">
-        <span class="brand-mark">K</span>
-        <div>
-          <strong>K-pop Collection</strong>
-          <small>我的私人专辑收藏馆</small>
-        </div>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#f7cfe0" />
+    <meta name="application-name" content="K-pop 收藏日记" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="K-pop 收藏日记" />
+    <title>K-pop 收藏日记</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="icon" href="/icons/icon-192.png" />
+    <link rel="stylesheet" href="/scrapbook.css" />
+    <link rel="stylesheet" href="/reference-masthead.css?v=2" />
+  </head>
+  <body>
+    <a class="skip-link" href="#pageContent">跳到内容</a>
+    <div id="networkBanner" role="status" hidden>
+      当前离线，收藏数据需要连接本地服务。
+    </div>
+    <div class="app-shell">
+      <header id="siteHeader"></header>
+      <section
+        id="hero"
+        class="scrapbook-hero"
+        aria-label="我的收藏手账"
+      ></section>
+      <section id="favoriteStrip" aria-label="本命团"></section>
+      <div class="page-layout">
+        <aside id="sidebar" aria-label="浏览与筛选"></aside>
+        <main id="pageContent" tabindex="-1">
+          <div class="empty-paper">正在翻开你的收藏日记…</div>
+        </main>
+        <aside id="diaryRail" aria-label="收藏日记"></aside>
       </div>
-      <button id="primaryAction" class="primary-button" type="button">+ 添加团体</button>
-    </header>
-
-    <main>
-      <section id="homeView">
-        <div class="hero">
-          <div>
-            <p class="eyebrow">MY COLLECTION</p>
-            <h1>把喜欢的每一张专辑，都好好收进来。</h1>
-            <p class="hero-copy">按团体、发行年份、专辑版本和收藏状态整理你的 K-pop 实体专辑。</p>
-          </div>
-          <div class="hero-progress">
-            <span id="heroCompletion">0%</span>
-            <small>收藏完成度</small>
-          </div>
-        </div>
-
-        <section class="stats-grid" aria-label="收藏统计">
-          <article class="stat-card"><span id="statGroups">0</span><small>团体</small></article>
-          <article class="stat-card"><span id="statAlbums">0</span><small>专辑</small></article>
-          <article class="stat-card"><span id="statVersions">0</span><small>版本</small></article>
-          <article class="stat-card"><span id="statOwned">0</span><small>已拥有</small></article>
-        </section>
-
-        <section class="toolbar">
-          <label class="search-box">
-            <span>⌕</span>
-            <input id="groupSearch" type="search" placeholder="搜索团体…" autocomplete="off">
-          </label>
-        </section>
-
-        <section>
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">GROUPS</p>
-              <h2>我的团体</h2>
-            </div>
-            <span id="groupCountLabel" class="muted"></span>
-          </div>
-          <div id="groupGrid" class="group-grid"></div>
-          <div id="homeEmpty" class="empty-state hidden">
-            <div class="empty-icon">♡</div>
-            <h3>还没有收藏团体</h3>
-            <p>先添加你正在追的团体，再开始录入专辑和版本。</p>
-            <button class="primary-button" data-open-dialog="groupDialog">添加第一个团体</button>
-          </div>
-        </section>
-      </section>
-
-      <section id="groupView" class="hidden">
-        <div id="groupHero" class="group-hero"></div>
-
-        <div class="detail-toolbar">
-          <label class="search-box compact">
-            <span>⌕</span>
-            <input id="albumSearch" type="search" placeholder="搜索专辑…" autocomplete="off">
-          </label>
-          <select id="statusFilter" aria-label="收藏状态筛选">
-            <option value="all">全部状态</option>
-            <option value="owned">已拥有</option>
-            <option value="missing">缺少</option>
-            <option value="wishlist">Wishlist</option>
-            <option value="preordered">已预购</option>
-          </select>
-          <select id="yearFilter" aria-label="年份筛选">
-            <option value="all">全部年份</option>
-          </select>
-          <select id="sortFilter" aria-label="排序">
-            <option value="date-desc">发行时间 ↓</option>
-            <option value="date-asc">发行时间 ↑</option>
-            <option value="name-asc">名称 A-Z</option>
-          </select>
-        </div>
-
-        <div id="albumList" class="album-list"></div>
-        <div id="albumEmpty" class="empty-state hidden">
-          <div class="empty-icon">♬</div>
-          <h3>还没有专辑</h3>
-          <p>从这个团体的第一张实体专辑开始录入吧。</p>
-          <button class="primary-button" data-open-dialog="albumDialog">添加专辑</button>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <dialog id="groupDialog">
-    <form id="groupForm" class="dialog-form">
-      <div class="dialog-heading">
-        <div>
-          <p class="eyebrow">NEW GROUP</p>
-          <h2>添加团体</h2>
-        </div>
-        <button class="icon-button" type="button" data-close-dialog>×</button>
-      </div>
-      <label>团体名称<input name="name" required placeholder="aespa"></label>
-      <label>韩文名<input name="korean_name" placeholder="에스파"></label>
-      <div class="two-columns">
-        <label>公司<input name="company" placeholder="SM Entertainment"></label>
-        <label>出道日期<input name="debut_date" type="date"></label>
-      </div>
-      <label>团体封面<input name="cover_file" type="file" accept="image/*"></label>
-      <button class="primary-button full" type="submit">保存团体</button>
-    </form>
-  </dialog>
-
-  <dialog id="albumDialog">
-    <form id="albumForm" class="dialog-form">
-      <div class="dialog-heading">
-        <div>
-          <p class="eyebrow">NEW ALBUM</p>
-          <h2>添加专辑</h2>
-        </div>
-        <button class="icon-button" type="button" data-close-dialog>×</button>
-      </div>
-      <label>专辑名称<input name="name" required placeholder="Rich Man"></label>
-      <label>韩文名<input name="korean_name"></label>
-      <div class="two-columns">
-        <label>发行日期<input name="release_date" type="date"></label>
-        <label>类型
-          <select name="album_type">
-            <option value="">未分类</option>
-            <option>Full Album</option>
-            <option>Mini Album</option>
-            <option>Single Album</option>
-            <option>Special Album</option>
-            <option>Repackage</option>
-            <option>OST</option>
-          </select>
-        </label>
-      </div>
-      <label>专辑封面<input name="cover_file" type="file" accept="image/*"></label>
-      <label>备注<textarea name="notes" rows="3"></textarea></label>
-      <button class="primary-button full" type="submit">保存专辑</button>
-    </form>
-  </dialog>
-
-  <dialog id="versionDialog">
-    <form id="versionForm" class="dialog-form">
-      <div class="dialog-heading">
-        <div>
-          <p class="eyebrow">NEW VERSION</p>
-          <h2>添加版本</h2>
-        </div>
-        <button class="icon-button" type="button" data-close-dialog>×</button>
-      </div>
-      <input name="album_id" type="hidden">
-      <label>版本名称<input name="version_name" required placeholder="Limited Ver."></label>
-      <div class="two-columns">
-        <label>版本类型<input name="edition_type" placeholder="Photobook / Digipack"></label>
-        <label>条码<input name="barcode" inputmode="numeric"></label>
-      </div>
-      <label>版本封面<input name="cover_file" type="file" accept="image/*"></label>
-      <button class="primary-button full" type="submit">保存版本</button>
-    </form>
-  </dialog>
-
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="/app.js" defer></script>
-</body>
+      <footer class="page-footer">
+        Every Album Tells A Story ♡ <span>K-pop 收藏日记</span>
+      </footer>
+    </div>
+    <div id="musicBar"></div>
+    <dialog id="editorDialog" aria-labelledby="dialogTitle"></dialog>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/app.js?v=0.6-masthead2"></script>
+  </body>
 </html>

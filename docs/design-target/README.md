@@ -4,33 +4,31 @@
 
 ## 视觉基准图
 
-### 0. 总风格基准（最高优先级）
+### 高清原图（当前验收基准）
 
-![最终总风格基准](reference-style.webp)
-
-`reference-style.webp` 是用户确认的核心目标样式。遇到效果图之间存在细节冲突时，以这张图的整体设计语言为最高优先级。
+用户于 2026-09-13 补充五张高清 PNG，已保存于 `originals/`，以下链接以原图为准。旧 `reference-style.webp` 损坏，旧页面 WebP 仅为缩略图，暂留存档，不再作为更高优先级依据。
 
 ### 1. 首页
 
-![首页效果图](01-home.webp)
+![首页效果图](originals/01-home.png)
 
 ### 2. 我的收藏
 
-![我的收藏效果图](02-my-collection.webp)
+![我的收藏效果图](originals/02-my-collection.png)
 
 ### 3. 专辑图鉴
 
-![专辑图鉴效果图](03-album-gallery.webp)
+![专辑图鉴效果图](originals/03-album-gallery.png)
 
 ### 4. 心愿清单
 
-![心愿清单效果图](04-wishlist.webp)
+![心愿清单效果图](originals/04-wishlist.png)
 
 ### 5. 关于我
 
-![关于我效果图](05-about-me.webp)
+![关于我效果图](originals/05-about-me.png)
 
-> 仓库中的这些 WebP 为轻量化视觉参考图，用于开发和评审，不作为最终产品中的生产素材。实际页面应使用项目真实团体、专辑和用户数据。
+> 高清原图仅用于开发和评审，不作为生产页面背景。实际界面使用真实团体、专辑和用户数据。
 
 ## 不可偏离的设计语言
 
@@ -60,11 +58,11 @@
 
 1. 统一全站 Design Tokens：颜色、纸张背景、阴影、圆角、胶带、便签、字体层级、间距。
 2. 统一顶部导航、搜索、页面容器和桌面底部播放器。
-3. 首页按 `01-home.webp` 收敛。
-4. 我的收藏按 `02-my-collection.webp` 收敛。
-5. 专辑图鉴按 `03-album-gallery.webp` 收敛。
-6. 心愿清单按 `04-wishlist.webp` 收敛。
-7. 关于我按 `05-about-me.webp` 收敛。
+3. 首页按 `originals/01-home.png` 收敛。
+4. 我的收藏按 `originals/02-my-collection.png` 收敛。
+5. 专辑图鉴按 `originals/03-album-gallery.png` 收敛。
+6. 心愿清单按 `originals/04-wishlist.png` 收敛。
+7. 关于我按 `originals/05-about-me.png` 收敛。
 8. 最后做 Tablet / Mobile 响应式适配，不牺牲桌面端的 scrapbook 视觉。
 
 ## 功能原则
@@ -73,7 +71,7 @@
 
 ## 验收标准
 
-- 1440px / 1536px 桌面宽度打开时，第一眼必须与 `reference-style.webp` 属于同一本 K-pop 收藏手账。
+- 1440px / 1536px 桌面宽度打开时，第一眼必须与 五张高清原图属于同一本 K-pop 收藏手账。
 - 五个核心页面必须共享同一套纸张、胶带、便签、字体、色彩和导航语言。
 - 真实数据替代效果图中的示例内容后，页面仍保持同样的层次与氛围。
 - 页面可以丰富，但不能重新产生明显的“后台管理系统感”。
