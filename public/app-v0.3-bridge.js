@@ -4,6 +4,13 @@ function syncV3CenterState() {
   document.body.classList.toggle('v3-center-open', Boolean(v3Center && !v3Center.classList.contains('hidden')));
 }
 
+function closeV3CenterShell() {
+  if (!v3Center || v3Center.classList.contains('hidden')) return;
+  v3Center.classList.add('hidden');
+  document.querySelector('#primaryAction')?.classList.remove('v3-hidden-action');
+  history.replaceState({}, '', '/');
+}
+
 function hideUnusedPurchaseFields() {
   const form = document.querySelector('#versionDetailForm');
   if (!form) return;
@@ -28,8 +35,13 @@ if (v3Center) {
 hideUnusedPurchaseFields();
 
 document.addEventListener('click', (event) => {
-  if (!event.target.closest('#v3Back')) return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  window.location.href = '/';
+  if (event.target.closest('#v3Back')) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    window.location.href = '/';
+    return;
+  }
+
+  if (!v3Center || v3Center.classList.contains('hidden')) return;
+  if (event.target.closest('[data-v2-nav], #brandHome, #backButton')) closeV3CenterShell();
 }, true);
