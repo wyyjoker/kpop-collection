@@ -1,0 +1,22 @@
+{
+  "id": "/",
+  "name": "K-pop Collection",
+  "short_name": "K-pop",
+  "description": "我的私人 K-pop 实体专辑收藏馆",
+  "lang": "zh-CN",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b0c10",
+  "theme_color": "#0b0c10",
+  "categories": ["entertainment", "lifestyle"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Wishlist", "short_name": "Wishlist", "url": "/?view=collection&tab=wishlist", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "缺失版本", "short_name": "缺失", "url": "/?view=collection&tab=missing", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
