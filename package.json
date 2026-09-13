@@ -1,13 +1,13 @@
 {
   "name": "kpop-collection",
-  "version": "0.4.0",
+  "version": "0.5.0-alpha.1",
   "private": true,
   "description": "Personal K-pop album collection manager",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "check": "node --check server.js && node --check server-v0.1b.js && node --check public/app.js && node --check public/app-v0.1b.js && node --check public/app-v0.2.js && node --check public/app-v0.3.js && node --check public/app-v0.3-bridge.js && node --check public/app-v0.4.js && node --check public/sw.js"
+    "check": "node --check server.js && node --check server-v0.1b.js && node --check public/app.js && node --check public/app-v0.1b.js && node --check public/app-v0.2.js && node --check public/app-v0.3.js && node --check public/app-v0.3-bridge.js && node --check public/app-v0.4.js && node --check public/app-v0.5a.js && node --check public/sw.js"
   },
   "engines": {
     "node": ">=20"

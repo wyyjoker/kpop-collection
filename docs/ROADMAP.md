@@ -55,6 +55,32 @@
 - PWA shortcuts for Wishlist and missing versions
 - CI validation for manifest, icons, Service Worker and PWA endpoints
 
+## V0.5 — Scrapbook Visual Redesign
+
+### V0.5A — Home / K-pop 收藏日记
+
+- Pastel scrapbook home visual system
+- Hero with dynamic Polaroid collage built from real collection covers
+- Hand-drawn heart / star / bunny / paper-grid assets
+- Favorite-group horizontal strip
+- Left collection navigation, central album gallery and right diary rail
+- Recent-release album cards with collection-state labels
+- Special-edition auto detection for Limited / Special / Digipack / POB-like versions
+- Wishlist preview and latest-added card
+- Decorative bottom music player
+- Responsive single-column mobile layout
+- Preserve existing CRUD / backup / Collection Center / PWA behavior
+
+### V0.5B — Group Detail Scrapbook
+
+- Redesign group hero and discography sections using the V0.5 paper / collage language
+- Keep release-year grouping and version management
+
+### V0.5C — Collection Center Scrapbook
+
+- Restyle Wishlist / missing / rankings / status distribution to match V0.5A
+- Refine mobile app navigation after all pages share one visual system
+
 ## Later
 
 - Photocards

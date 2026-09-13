@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kpop-collection-shell-v0.4.0';
+const CACHE_NAME = 'kpop-collection-shell-v0.5.0-alpha.1';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -7,17 +7,23 @@ const APP_SHELL = [
   '/v0.2.css',
   '/v0.3.css',
   '/v0.4.css',
+  '/v0.5a.css',
   '/app.js',
   '/app-v0.1b.js',
   '/app-v0.2.js',
   '/app-v0.3.js',
   '/app-v0.3-bridge.js',
   '/app-v0.4.js',
+  '/app-v0.5a.js',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon-maskable-512.png',
   '/icons/apple-touch-icon.png',
+  '/assets/scrapbook/paper-grid.svg',
+  '/assets/scrapbook/doodle-heart.svg',
+  '/assets/scrapbook/doodle-star.svg',
+  '/assets/scrapbook/doodle-bunny.svg',
 ];
 
 self.addEventListener('install', (event) => {

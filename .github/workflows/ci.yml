@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feature/v0.1b, feature/v0.2, feature/v0.3, feature/v0.4]
+    branches: [main, feature/v0.1b, feature/v0.2, feature/v0.3, feature/v0.4, feature/v0.5a]
   pull_request:
     branches: [main]
 
@@ -24,7 +24,7 @@ jobs:
       - name: Syntax checks
         run: npm run check
 
-      - name: Validate PWA assets
+      - name: Validate PWA and scrapbook assets
         shell: bash
         run: |
           node -e "JSON.parse(require('fs').readFileSync('public/manifest.webmanifest', 'utf8'))"
@@ -32,6 +32,12 @@ jobs:
           test -f public/icons/icon-512.png
           test -f public/icons/icon-maskable-512.png
           test -f public/icons/apple-touch-icon.png
+          test -f public/app-v0.5a.js
+          test -f public/v0.5a.css
+          test -f public/assets/scrapbook/paper-grid.svg
+          test -f public/assets/scrapbook/doodle-heart.svg
+          test -f public/assets/scrapbook/doodle-star.svg
+          test -f public/assets/scrapbook/doodle-bunny.svg
 
       - name: Smoke test server
         shell: bash
@@ -43,6 +49,9 @@ jobs:
             if curl -fsS http://127.0.0.1:3000/api/health >/dev/null; then
               curl -fsS http://127.0.0.1:3000/manifest.webmanifest >/dev/null
               curl -fsS http://127.0.0.1:3000/sw.js >/dev/null
+              curl -fsS http://127.0.0.1:3000/app-v0.5a.js >/dev/null
+              curl -fsS http://127.0.0.1:3000/v0.5a.css >/dev/null
+              curl -fsS http://127.0.0.1:3000/assets/scrapbook/doodle-bunny.svg >/dev/null
               exit 0
             fi
             sleep 1
