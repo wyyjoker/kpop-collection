@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feature/v0.1b, feature/v0.2, feature/v0.3]
+    branches: [main, feature/v0.1b, feature/v0.2, feature/v0.3, feature/v0.4]
   pull_request:
     branches: [main]
 
@@ -24,6 +24,15 @@ jobs:
       - name: Syntax checks
         run: npm run check
 
+      - name: Validate PWA assets
+        shell: bash
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('public/manifest.webmanifest', 'utf8'))"
+          test -f public/icons/icon-192.png
+          test -f public/icons/icon-512.png
+          test -f public/icons/icon-maskable-512.png
+          test -f public/icons/apple-touch-icon.png
+
       - name: Smoke test server
         shell: bash
         run: |
@@ -31,7 +40,9 @@ jobs:
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
           for i in {1..20}; do
-            if curl -fsS http://127.0.0.1:3000/api/health; then
+            if curl -fsS http://127.0.0.1:3000/api/health >/dev/null; then
+              curl -fsS http://127.0.0.1:3000/manifest.webmanifest >/dev/null
+              curl -fsS http://127.0.0.1:3000/sw.js >/dev/null
               exit 0
             fi
             sleep 1
