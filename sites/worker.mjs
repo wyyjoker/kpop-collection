@@ -2,9 +2,9 @@ import bootstrap from './bootstrap.json' with { type: 'json' };
 import initialAssets from './bootstrap-assets.json' with { type: 'json' };
 import { EMPTY_PROFILE, STATUSES, fail, id, text, validateProfile, statement, all, first, profile, profileStatement, validateSnapshot, insertStatements, exportData, assetReferences } from './data.mjs';
 import { sqliteExport, sqliteImport } from './sqlite-backup.mjs';
-const MAX_UPLOAD = 8 * 1024 * 1024, MAX_BACKUP = 24 * 1024 * 1024;
+const MAX_UPLOAD = 8 * 1024 * 1024, MAX_AUDIO = 20 * 1024 * 1024, MAX_BACKUP = 64 * 1024 * 1024, MAX_ASSETS = 48 * 1024 * 1024;
 const json = (data,status=200) => new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
-const keyFor = value => { const key = typeof value==='string'?value.replace(/^\/uploads\//,''):''; if (!key || key.length>500 || !/^[a-zA-Z0-9_.-]+$/.test(key) || key==='.' || key==='..') fail('图片路径无效。'); return key; };
+const keyFor = value => { const key = typeof value==='string'?value.replace(/^\/uploads\//,''):''; if (!key || key.length>500 || !/^[a-zA-Z0-9_.-]+$/.test(key) || key==='.' || key==='..') fail('资源路径无效。'); return key; };
 const decode = value => Uint8Array.from(atob(value),c=>c.charCodeAt(0));
 function encode(bytes) { let s=''; for(let i=0;i<bytes.length;i+=16384)s+=String.fromCharCode(...bytes.subarray(i,i+16384));return btoa(s); }
 async function limitedBody(request,max) {
@@ -36,20 +36,21 @@ async function groups(db) {
   return rows.map(r=>({...r,completion:r.version_count?Math.round(r.owned_count/r.version_count*100):0}));
 }
 async function library(db) {
-  const [groupRows,albums,versions,tracks,photos]=await Promise.all([groups(db),all(db,`SELECT a.*,g.name group_name FROM albums a JOIN groups g ON g.id=a.group_id ORDER BY a.release_date DESC,a.id`),
+  const [groupRows,albums,versions,tracks,photos,audios]=await Promise.all([groups(db),all(db,`SELECT a.*,g.name group_name FROM albums a JOIN groups g ON g.id=a.group_id ORDER BY a.release_date DESC,a.id`),
     all(db,`SELECT v.*,COALESCE(c.status,'missing') status,COALESCE(c.quantity,0) quantity,COALESCE(c.purchase_date,'') purchase_date,c.purchase_price,COALESCE(c.purchase_channel,'') purchase_channel,COALESCE(c.purchase_currency,'CNY') purchase_currency,COALESCE(c.opened,0) opened,COALESCE(c.notes,'') collection_notes FROM album_versions v LEFT JOIN collection c ON c.album_version_id=v.id ORDER BY v.album_id,v.version_name COLLATE NOCASE,v.id`),
-    all(db,'SELECT * FROM album_tracks ORDER BY album_id,disc_no,track_no,id'),all(db,'SELECT * FROM album_photos ORDER BY album_id,id')]);
-  const byId=new Map(albums.map(a=>[a.id,{...a,versions:[],tracks:[],photos:[]}]));
+    all(db,'SELECT * FROM album_tracks ORDER BY album_id,disc_no,track_no,id'),all(db,'SELECT * FROM album_photos ORDER BY album_id,id'),all(db,'SELECT * FROM album_audios ORDER BY album_id,id')]);
+  const byId=new Map(albums.map(a=>[a.id,{...a,versions:[],tracks:[],photos:[],audios:[]}]));
   for(const v of versions)byId.get(v.album_id)?.versions.push(v);
   for(const t of tracks)byId.get(t.album_id)?.tracks.push(t);
   for(const p of photos)byId.get(p.album_id)?.photos.push(p);
+  for(const a of audios)byId.get(a.album_id)?.audios.push(a);
   return {groups:groupRows,albums:[...byId.values()],runtime:'sites'};
 }
 async function collectAssets(env,snapshot) {
   const assets=[];let size=0;
   for(const path of assetReferences(snapshot.data)) {
     const key=keyFor(path),object=await env.BUCKET.get(key);if(!object)fail('备份中有图片缺失，请先检查封面。',409);
-    size+=object.size;if(size>12*1024*1024)fail('图片总量超过单份备份限制（12 MB），请先单独保存原图。',413);
+    size+=object.size;if(size>MAX_ASSETS)fail('资源总量超过单份备份限制（48 MB），请先单独保存原文件。',413);
     assets.push({key,type:object.httpMetadata?.contentType||'application/octet-stream',base64:encode(new Uint8Array(await object.arrayBuffer()))});
   }
   return assets;
@@ -60,9 +61,9 @@ async function restore(env,snapshot) {
   const references=assetReferences(data), replacements=new Map();let total=0;
   for(const asset of assets) {
     const key=keyFor(asset.key);if(!references.has(`/uploads/${key}`))fail('备份包含未引用的图片。');
-    if(typeof asset.base64!=='string'||asset.base64.length>MAX_BACKUP||!/^image\/(png|jpeg|webp|gif|avif|svg\+xml)$/.test(asset.type))fail('备份图片格式无效。');
+    if(typeof asset.base64!=='string'||asset.base64.length>MAX_BACKUP||!(/^(image\/(png|jpeg|webp|gif|avif|svg\+xml)|audio\/(mpeg|mp3|mp4|m4a|wav|x-wav|ogg|webm|aac|flac|x-flac))$/.test(asset.type)))fail('备份资源格式无效。');
     let bytes;try{bytes=decode(asset.base64);}catch{fail('备份图片编码无效。');}
-    total+=bytes.length;if(total>12*1024*1024)fail('备份图片过大。',413);
+    total+=bytes.length;if(total>MAX_ASSETS)fail('备份资源过大。',413);
     if(replacements.has(key))fail('备份图片重复。');
     replacements.set(key,{key:`${crypto.randomUUID()}.${key.split('.').pop().slice(0,10)}`,bytes,type:asset.type});
   }
@@ -71,13 +72,14 @@ async function restore(env,snapshot) {
   for(const row of data.groups){row.cover=remap(row.cover);row.logo=remap(row.logo);}
   for(const row of [...data.albums,...data.album_versions])row.cover=remap(row.cover);
   for(const row of data.album_photos)row.src=remap(row.src);
+  for(const row of data.album_audios||[])row.src=remap(row.src);
   data.profile.avatar=remap(data.profile.avatar);data.profile.hero_cover=remap(data.profile.hero_cover);
   // Never overwrite existing object keys. A failed SQL batch leaves live data intact.
   const safety=await exportData(env.DB),safetyKey=`backups/before-restore-${crypto.randomUUID()}.json`;
   await env.BUCKET.put(safetyKey,JSON.stringify(safety),{httpMetadata:{contentType:'application/json'}});
   try {
     for(const asset of replacements.values()){await env.BUCKET.put(asset.key,asset.bytes,{httpMetadata:{contentType:asset.type}});uploaded.push(asset.key);}
-    const deletes=['album_photos','album_tracks','catalog_imports','collection','album_versions','albums','groups','profile'].map(table=>statement(env.DB,`DELETE FROM ${table}`));
+    const deletes=['album_audios','album_photos','album_tracks','catalog_imports','collection','album_versions','albums','groups','profile'].map(table=>statement(env.DB,`DELETE FROM ${table}`));
     await env.DB.batch([...deletes,...insertStatements(env.DB,data)]);
   }catch(error){await Promise.all(uploaded.map(key=>env.BUCKET.delete(key)));throw error;}
   return {success:true,safety_backup:safetyKey,counts:{groups:data.groups.length,albums:data.albums.length,versions:data.album_versions.length,collection:data.collection.length}};
@@ -154,6 +156,29 @@ async function api(request,env,url,canEdit) {
     const data=await form(request,MAX_UPLOAD+65536),file=data.get('image');if(!file?.arrayBuffer||file.size<1||file.size>MAX_UPLOAD)fail('请选择不超过 8 MB 的图片。');
     const extensions={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif','image/avif':'avif'},ext=extensions[file.type];if(!ext)fail('支持 PNG、JPEG、WebP、GIF、AVIF 图片。');
     const key=`${crypto.randomUUID()}.${ext}`;await env.BUCKET.put(key,await file.arrayBuffer(),{httpMetadata:{contentType:file.type}});return json({path:`/uploads/${key}`},201);
+  }
+  if(path==='/api/upload/audio'&&method==='POST') {
+    const data=await form(request,MAX_AUDIO+65536),file=data.get('audio');if(!file?.arrayBuffer||file.size<1||file.size>MAX_AUDIO)fail('请选择不超过 20 MB 的音频。');
+    const extensions={'audio/mpeg':'mp3','audio/mp3':'mp3','audio/mp4':'m4a','audio/m4a':'m4a','audio/x-m4a':'m4a','audio/wav':'wav','audio/x-wav':'wav','audio/ogg':'ogg','audio/webm':'webm','audio/aac':'aac','audio/flac':'flac','audio/x-flac':'flac'},ext=extensions[file.type];if(!ext)fail('支持 MP3、M4A、WAV、OGG、FLAC 等音频。');
+    const key=`${crypto.randomUUID()}.${ext}`;await env.BUCKET.put(key,await file.arrayBuffer(),{httpMetadata:{contentType:file.type}});return json({path:`/uploads/${key}`},201);
+  }
+  const audioAlbum=path.match(/^\/api\/albums\/(\d+)\/audios$/);
+  if(audioAlbum&&method==='POST') {
+    const albumId=id(audioAlbum[1]),body=await payload(request);
+    if(!await first(db,'SELECT id FROM albums WHERE id=?',[albumId]))fail('专辑不存在。',404);
+    if(!body||typeof body!=='object'||typeof body.src!=='string'||!body.src.startsWith('/uploads/'))fail('请先上传音频文件。');
+    const key=keyFor(body.src);if(!await env.BUCKET.head(key))fail('上传的音频不存在。',404);
+    const title=text(body.title,200);if(!title)fail('请填写曲目名称。');
+    const note=text(body.note,2000);
+    await statement(db,'INSERT INTO album_audios (album_id,src,title,note) VALUES (?,?,?,?) ON CONFLICT(album_id,src) DO UPDATE SET title=excluded.title, note=excluded.note',[albumId,body.src,title,note]).run();
+    return json(await first(db,'SELECT * FROM album_audios WHERE album_id=? AND src=?',[albumId,body.src]),201);
+  }
+  const audio=path.match(/^\/api\/audios\/(\d+)$/);
+  if(audio&&['PUT','DELETE'].includes(method)) {
+    const audioId=id(audio[1]);if(!await first(db,'SELECT id FROM album_audios WHERE id=?',[audioId]))fail('音频不存在。',404);
+    if(method==='DELETE'){await statement(db,'DELETE FROM album_audios WHERE id=?',[audioId]).run();return json({success:true});}
+    const body=await payload(request);const title=text(body.title,200);if(!title)fail('请填写曲目名称。');
+    return json(await statement(db,'UPDATE album_audios SET title=?,note=? WHERE id=? RETURNING *',[title,text(body.note,2000),audioId]).first());
   }
   if(path==='/api/export'&&method==='GET'){const snapshot=await exportData(db);if(url.searchParams.get('assets')==='1')snapshot.assets=await collectAssets(env,snapshot);const response=json(snapshot);response.headers.set('Content-Disposition',`attachment; filename="kpop-collection-${new Date().toISOString().slice(0,10)}.json"`);return response;}
   if(path==='/api/import'&&method==='POST')return json(await restore(env,await payload(request)));

@@ -21,3 +21,9 @@ export async function upload(file) {
   body.append("image", file);
   return (await request("/api/upload", { method: "POST", body })).path;
 }
+export async function uploadAudio(file) {
+  if (!file?.size) return "";
+  const body = new FormData();
+  body.append("audio", file);
+  return (await request("/api/upload/audio", { method: "POST", body })).path;
+}

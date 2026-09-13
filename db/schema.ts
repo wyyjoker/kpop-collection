@@ -40,3 +40,12 @@ export const albumPhotos = sqliteTable('album_photos', {
   album_id: integer('album_id').notNull().references(() => albums.id, { onDelete: 'cascade' }),
   src: text('src').notNull(), caption: text('caption').notNull().default(''), created_at: created(),
 }, t => [uniqueIndex('album_photos_source_unique').on(t.album_id,t.src)]);
+export const albumAudios = sqliteTable('album_audios', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  album_id: integer('album_id').notNull().references(() => albums.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  src: text('src').notNull(),
+  note: text('note').notNull().default(''),
+  created_at: created(),
+}, t => [uniqueIndex('album_audios_source_unique').on(t.album_id,t.src), index('idx_album_audios_album_id').on(t.album_id)]);
+

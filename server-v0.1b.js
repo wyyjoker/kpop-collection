@@ -15,7 +15,13 @@ const DB_PATH = path.resolve(process.env.DB_PATH || path.join(__dirname, 'data',
 const UPLOAD_DIR = path.resolve(process.env.UPLOAD_DIR || path.join(__dirname, 'public', 'uploads'));
 const RESTORE_TMP_DIR = path.join(path.dirname(DB_PATH), '.restore-tmp');
 const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB || 8);
+const MAX_AUDIO_MB = Number(process.env.MAX_AUDIO_MB || 20);
 const MAX_BACKUP_MB = Number(process.env.MAX_BACKUP_MB || 100);
+const AUDIO_MIME = new Set([
+  'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/m4a', 'audio/x-m4a',
+  'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/webm', 'audio/aac', 'audio/flac', 'audio/x-flac',
+]);
+const AUDIO_EXT = new Set(['.mp3', '.m4a', '.mp4', '.wav', '.ogg', '.oga', '.webm', '.aac', '.flac']);
 const STATUSES = new Set(['owned', 'wishlist', 'missing', 'preordered']);
 const REQUIRED_TABLES = ['groups', 'albums', 'album_versions', 'collection'];
 const PROFILE_TEXT_LIMITS = { name: 100, bio: 2000, avatar: 2048, hero_cover: 2048, diary: 20000 };
@@ -136,6 +142,14 @@ function initializeDatabase(database) {
       FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE,
       UNIQUE(album_id,src)
     )`);
+    database.run(`CREATE TABLE IF NOT EXISTS album_audios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, album_id INTEGER NOT NULL,
+      title TEXT NOT NULL, src TEXT NOT NULL, note TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE,
+      UNIQUE(album_id,src)
+    )`);
+    database.run('CREATE INDEX IF NOT EXISTS idx_album_audios_album_id ON album_audios(album_id)');
     database.run(`CREATE TRIGGER IF NOT EXISTS prune_profile_favorites AFTER DELETE ON groups
       BEGIN
         UPDATE profile SET favorite_group_ids = (
@@ -271,7 +285,9 @@ async function relatedAssetsForGroup(groupId) {
       FROM album_versions v
       JOIN albums a ON a.id = v.album_id
       WHERE a.group_id = ?
-  `, [groupId, groupId, groupId]);
+    UNION ALL SELECT src AS path FROM album_photos p JOIN albums a ON a.id = p.album_id WHERE a.group_id = ?
+    UNION ALL SELECT src AS path FROM album_audios au JOIN albums a ON a.id = au.album_id WHERE a.group_id = ?
+  `, [groupId, groupId, groupId, groupId, groupId]);
   return rows.map((row) => row.path);
 }
 
@@ -279,8 +295,24 @@ async function relatedAssetsForAlbum(albumId) {
   const rows = await all(`
     SELECT cover AS path FROM albums WHERE id = ?
     UNION ALL SELECT cover AS path FROM album_versions WHERE album_id = ?
-  `, [albumId, albumId]);
+    UNION ALL SELECT src AS path FROM album_photos WHERE album_id = ?
+    UNION ALL SELECT src AS path FROM album_audios WHERE album_id = ?
+  `, [albumId, albumId, albumId, albumId]);
   return rows.map((row) => row.path);
+}
+
+async function removeUnusedLocalAsset(assetPath) {
+  if (!assetPath || !assetPath.startsWith('/uploads/')) return;
+  const stillUsed = await get(
+    `SELECT 1 FROM groups WHERE cover = ? OR logo = ?
+     UNION ALL SELECT 1 FROM albums WHERE cover = ?
+     UNION ALL SELECT 1 FROM album_versions WHERE cover = ?
+     UNION ALL SELECT 1 FROM album_photos WHERE src = ?
+     UNION ALL SELECT 1 FROM album_audios WHERE src = ?
+     UNION ALL SELECT 1 FROM profile WHERE avatar = ? OR hero_cover = ?`,
+    [assetPath, assetPath, assetPath, assetPath, assetPath, assetPath, assetPath, assetPath],
+  );
+  if (!stillUsed) removeLocalAsset(assetPath);
 }
 
 const imageStorage = multer.diskStorage({
@@ -296,6 +328,18 @@ const upload = multer({
   limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!file.mimetype.startsWith('image/')) return cb(new Error('仅支持图片文件。'));
+    cb(null, true);
+  },
+});
+
+const audioUpload = multer({
+  storage: imageStorage,
+  limits: { fileSize: MAX_AUDIO_MB * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (!AUDIO_MIME.has(file.mimetype) && !AUDIO_EXT.has(ext)) {
+      return cb(new Error('仅支持常见音频文件（MP3 / M4A / WAV / OGG / FLAC 等）。'));
+    }
     cb(null, true);
   },
 });
@@ -424,6 +468,63 @@ app.delete('/api/photos/:id',async(req,res)=>{
   try {const result=await run('DELETE FROM album_photos WHERE id=?',[asId(req.params.id)]);if(!result.changes)return res.status(404).json({error:'照片不存在。'});res.json({success:true});}catch(error){handleDbError(res,error);}
 });
 
+app.post('/api/upload/audio', (req, res) => {
+  audioUpload.single('audio')(req, res, (error) => {
+    if (error) return res.status(400).json({ error: error.message || '音频上传失败。' });
+    if (!req.file) return res.status(400).json({ error: '请选择音频文件。' });
+    res.status(201).json({ path: `/uploads/${req.file.filename}` });
+  });
+});
+
+app.post('/api/albums/:id/audios', async (req, res) => {
+  try {
+    const albumId = asId(req.params.id);
+    const { src, title, note = '' } = req.body || {};
+    if (!albumId || !await get('SELECT id FROM albums WHERE id=?', [albumId])) {
+      return res.status(404).json({ error: '专辑不存在。' });
+    }
+    if (typeof src !== 'string' || !/^\/uploads\/[a-zA-Z0-9_.-]+$/.test(src) || !fs.existsSync(path.join(UPLOAD_DIR, path.basename(src)))) {
+      return res.status(400).json({ error: '请先上传音频文件。' });
+    }
+    const cleanTitle = cleanText(title);
+    if (!cleanTitle || cleanTitle.length > 200) return res.status(400).json({ error: '请填写曲目名称（最多 200 字）。' });
+    if (typeof note !== 'string' || note.length > 2000) return res.status(400).json({ error: '音频备注最多 2000 字。' });
+    await run('INSERT INTO album_audios (album_id,src,title,note) VALUES (?,?,?,?) ON CONFLICT(album_id,src) DO UPDATE SET title=excluded.title, note=excluded.note', [albumId, src, cleanTitle, note.trim()]);
+    res.status(201).json(await get('SELECT * FROM album_audios WHERE album_id=? AND src=?', [albumId, src]));
+  } catch (error) {
+    handleDbError(res, error);
+  }
+});
+
+app.put('/api/audios/:id', async (req, res) => {
+  try {
+    const audioId = asId(req.params.id);
+    const current = await get('SELECT * FROM album_audios WHERE id=?', [audioId]);
+    if (!current) return res.status(404).json({ error: '音频不存在。' });
+    const title = req.body.title === undefined ? current.title : cleanText(req.body.title);
+    if (!title || title.length > 200) return res.status(400).json({ error: '请填写曲目名称（最多 200 字）。' });
+    const note = req.body.note === undefined ? current.note : req.body.note;
+    if (typeof note !== 'string' || note.length > 2000) return res.status(400).json({ error: '音频备注最多 2000 字。' });
+    await run('UPDATE album_audios SET title=?, note=? WHERE id=?', [title, note.trim(), audioId]);
+    res.json(await get('SELECT * FROM album_audios WHERE id=?', [audioId]));
+  } catch (error) {
+    handleDbError(res, error);
+  }
+});
+
+app.delete('/api/audios/:id', async (req, res) => {
+  try {
+    const audioId = asId(req.params.id);
+    const current = await get('SELECT src FROM album_audios WHERE id=?', [audioId]);
+    if (!current) return res.status(404).json({ error: '音频不存在。' });
+    await run('DELETE FROM album_audios WHERE id=?', [audioId]);
+    await removeUnusedLocalAsset(current.src);
+    res.json({ success: true });
+  } catch (error) {
+    handleDbError(res, error);
+  }
+});
+
 app.put('/api/profile', async (req, res) => {
   try {
     const groupIds = new Set((await all('SELECT id FROM groups')).map((group) => group.id));
@@ -436,7 +537,7 @@ app.put('/api/profile', async (req, res) => {
 
 app.get('/api/library', async (_req, res) => {
   try {
-    const [groups, albums, versions, tracks, photos] = await Promise.all([
+    const [groups, albums, versions, tracks, photos, audios] = await Promise.all([
       readGroups(),
       all(`SELECT a.*, g.name AS group_name FROM albums a JOIN groups g ON g.id = a.group_id
         ORDER BY CASE WHEN a.release_date = '' THEN 1 ELSE 0 END, a.release_date DESC, a.name COLLATE NOCASE, a.id`),
@@ -453,11 +554,13 @@ app.get('/api/library', async (_req, res) => {
         ORDER BY v.album_id, v.version_name COLLATE NOCASE, v.id`),
       all('SELECT * FROM album_tracks ORDER BY album_id, disc_no, track_no, id'),
       all('SELECT * FROM album_photos ORDER BY album_id,id'),
+      all('SELECT * FROM album_audios ORDER BY album_id,id'),
     ]);
-    const albumsById = new Map(albums.map((album) => [album.id, { ...album, versions: [], tracks: [], photos: [] }]));
+    const albumsById = new Map(albums.map((album) => [album.id, { ...album, versions: [], tracks: [], photos: [], audios: [] }]));
     for (const version of versions) albumsById.get(version.album_id)?.versions.push(version);
     for (const track of tracks) albumsById.get(track.album_id)?.tracks.push(track);
     for (const photo of photos) albumsById.get(photo.album_id)?.photos.push(photo);
+    for (const audio of audios) albumsById.get(audio.album_id)?.audios.push(audio);
     res.json({ groups, albums: [...albumsById.values()],can_edit:true });
   } catch (error) {
     handleDbError(res, error);
@@ -785,7 +888,7 @@ app.post('/api/upload', (req, res) => {
 
 app.get('/api/export', async (_req, res) => {
   try {
-    const [groups, albums, albumVersions, collection, albumTracks, catalogImports, profile, albumPhotos] = await Promise.all([
+    const [groups, albums, albumVersions, collection, albumTracks, catalogImports, profile, albumPhotos, albumAudios] = await Promise.all([
       all('SELECT * FROM groups ORDER BY id'),
       all('SELECT * FROM albums ORDER BY id'),
       all('SELECT * FROM album_versions ORDER BY id'),
@@ -794,13 +897,14 @@ app.get('/api/export', async (_req, res) => {
       all('SELECT * FROM catalog_imports ORDER BY catalog_key'),
       readProfile(),
       all('SELECT * FROM album_photos ORDER BY id'),
+      all('SELECT * FROM album_audios ORDER BY id'),
     ]);
     const snapshot = {
       format: 'kpop-collection-backup',
-      schema_version: 4,
+      schema_version: 5,
       app_version: APP_VERSION,
       exported_at: new Date().toISOString(),
-      data: { groups, albums, album_versions: albumVersions, collection, album_tracks: albumTracks, catalog_imports: catalogImports, profile,album_photos:albumPhotos },
+      data: { groups, albums, album_versions: albumVersions, collection, album_tracks: albumTracks, catalog_imports: catalogImports, profile, album_photos:albumPhotos, album_audios:albumAudios },
     };
     const stamp = new Date().toISOString().slice(0, 10);
     res.setHeader('Content-Disposition', `attachment; filename="kpop-collection-${stamp}.json"`);
@@ -829,6 +933,8 @@ app.post('/api/import', async (req, res) => {
   try {
     if((snapshot.schema_version>=4||data.album_photos!==undefined)&&!Array.isArray(data.album_photos))throw Object.assign(new Error('备份缺少实物相册。'),{status:400});
     for(const p of data.album_photos||[])if(!p||!Number.isSafeInteger(p.id)||p.id<1||!data.albums.some(a=>a.id===p.album_id)||typeof p.src!=='string'||!/^\/uploads\/[a-zA-Z0-9_.-]+$/.test(p.src)||typeof p.caption!=='string'||p.caption.length>2000)throw Object.assign(new Error('实物相册备份格式或关联无效。'),{status:400});
+    if((snapshot.schema_version>=5||data.album_audios!==undefined)&&!Array.isArray(data.album_audios))throw Object.assign(new Error('备份缺少本地音频。'),{status:400});
+    for(const a of data.album_audios||[])if(!a||!Number.isSafeInteger(a.id)||a.id<1||!data.albums.some(x=>x.id===a.album_id)||typeof a.src!=='string'||!/^\/uploads\/[a-zA-Z0-9_.-]+$/.test(a.src)||typeof a.title!=='string'||!a.title||a.title.length>200||typeof a.note!=='string'||a.note.length>2000)throw Object.assign(new Error('本地音频备份格式或关联无效。'),{status:400});
     // Old backups have no personal data; reset to the same defaults as a new database.
     const profile = { ...EMPTY_PROFILE, ...validateProfile(
       snapshot.schema_version >= 3 || data.profile !== undefined ? data.profile : EMPTY_PROFILE,
@@ -836,6 +942,7 @@ app.post('/api/import', async (req, res) => {
     ) };
     await run('BEGIN IMMEDIATE TRANSACTION');
     transactionStarted = true;
+    await run('DELETE FROM album_audios');
     await run('DELETE FROM album_photos');
     await run('DELETE FROM album_tracks');
     await run('DELETE FROM catalog_imports');
@@ -895,6 +1002,7 @@ app.post('/api/import', async (req, res) => {
         [row.catalog_key, row.imported_at || new Date().toISOString(), row.item_count]);
     }
     for(const row of data.album_photos||[])await run('INSERT INTO album_photos (id,album_id,src,caption,created_at) VALUES (?,?,?,?,?)',[row.id,row.album_id,row.src,row.caption,row.created_at||new Date().toISOString()]);
+    for(const row of data.album_audios||[])await run('INSERT INTO album_audios (id,album_id,title,src,note,created_at) VALUES (?,?,?,?,?,?)',[row.id,row.album_id,row.title,row.src,row.note||'',row.created_at||new Date().toISOString()]);
     await run('COMMIT');
     res.json({ success: true, counts: {
       groups: data.groups.length,

@@ -101,3 +101,14 @@ export function backup() {
   );
 }
 export const close = () => dialog.close();
+
+export function editAudio(id) {
+  const found = store.albums.flatMap((a) => (a.audios || []).map((item) => ({ ...item, album: a }))).find((item) => item.id === Number(id));
+  if (!found) throw new Error("音频已不存在。");
+  show("编辑本地音频", form("audio", id, `
+    <p class="form-context">${e(found.album.group_name)} · ${e(found.album.name)}</p>
+    ${field("曲目名称", "title", found.title, "text", 'required maxlength="200"')}
+    ${textarea("备注", "note", found.note || "", 2000)}
+  `, `<button class="danger-button" type="button" data-action="delete-audio" data-id="${id}">删除音频</button>`));
+}
+

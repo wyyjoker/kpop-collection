@@ -51,6 +51,24 @@ test('Sites runtime: authentication, durable CRUD, images and atomic backup rest
     assert.equal((await mf.dispatchFetch(`https://example.test/api/photos/${firstPhoto.id}`,{method:'DELETE'})).status,401);
     assert.equal(backup.data.profile.name,'Cloud diary');
   });
+  await t.test('local audio upload attaches to album and is readable publicly',async()=>{
+    const audioBytes=Buffer.from('ID3-demo-audio-bytes');
+    const form=new FormData();form.append('audio',new Blob([audioBytes],{type:'audio/mpeg'}),'demo.mp3');
+    const upload=await ok('/api/upload/audio','POST',form);
+    assert.match(upload.path,/^\/uploads\/[a-zA-Z0-9_.-]+$/);
+    const track=await ok(`/api/albums/${album.id}/audios`,'POST',{src:upload.path,title:'Super',note:'title track'});
+    assert.equal(track.title,'Super');
+    const updated=await ok(`/api/audios/${track.id}`,'PUT',{title:'Super (Title Ver.)',note:'local demo'});
+    assert.equal(updated.title,'Super (Title Ver.)');
+    const lib=await ok('/api/library');
+    const found=lib.albums.find(a=>a.id===album.id).audios;
+    assert.equal(found.length,1);
+    assert.equal(found[0].title,'Super (Title Ver.)');
+    const publicLib=await mf.dispatchFetch('https://example.test/api/library').then(r=>r.json());
+    assert.equal(publicLib.albums.find(a=>a.id===album.id).audios[0].src,upload.path);
+    assert.equal((await call(`/api/audios/${track.id}`,'DELETE')).status,200);
+    assert.equal((await ok('/api/library')).albums.find(a=>a.id===album.id).audios.length,0);
+  });
   await t.test('JSON restore preserves images and rejects corrupt data without data loss',async()=>{
     const bad=structuredClone(backup);bad.data.albums[0].group_id=99999;
     assert.equal((await call('/api/import','POST',bad)).status,400);

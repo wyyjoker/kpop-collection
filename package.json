@@ -1,6 +1,6 @@
 {
   "name": "kpop-collection",
-  "version": "0.5.0-alpha.4",
+  "version": "0.5.0-alpha.5",
   "private": true,
   "description": "Personal K-pop album collection manager",
   "main": "server.js",
@@ -16,7 +16,7 @@
     "predev": "node scripts/seed-seventeen.js",
     "dev": "node --watch server.js",
     "seed:seventeen": "node scripts/seed-seventeen.js --force",
-    "check": "node --check server.js && node --check server-v0.1b.js && node --check scripts/seed-seventeen.js && node --check public/app.js && node --check public/js/api.js && node --check public/js/store.js && node --check public/js/components.js && node --check public/js/pages.js && node --check public/js/dialogs.js && node --check public/app-v0.1b.js && node --check public/app-v0.2.js && node --check public/app-v0.3.js && node --check public/app-v0.3-bridge.js && node --check public/app-v0.4.js && node --check public/app-v0.5a.js && node --check public/app-v0.5a-polish.js && node --check public/app-v0.5a-hero.js && node --check public/app-v0.5a-seventeen.js && node --check public/sw.js"
+    "check": "node --check server.js && node --check server-v0.1b.js && node --check scripts/seed-seventeen.js && node --check public/app.js && node --check public/js/api.js && node --check public/js/store.js && node --check public/js/components.js && node --check public/js/pages.js && node --check public/js/dialogs.js && node --check public/js/audio.js && node --check public/js/player.js && node --check public/app-v0.1b.js && node --check public/app-v0.2.js && node --check public/app-v0.3.js && node --check public/app-v0.3-bridge.js && node --check public/app-v0.4.js && node --check public/app-v0.5a.js && node --check public/app-v0.5a-polish.js && node --check public/app-v0.5a-hero.js && node --check public/app-v0.5a-seventeen.js && node --check public/sw.js"
   },
   "engines": {
     "node": ">=22"

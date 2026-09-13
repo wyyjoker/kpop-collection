@@ -15,6 +15,13 @@
       "when": 1789313250677,
       "tag": "0001_big_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789315000000,
+      "tag": "0002_album_audios",
+      "breakpoints": true
     }
   ]
 }

@@ -2752,3 +2752,131 @@ dialog::backdrop {
     transition: none !important;
   }
 }
+
+
+/* Local audio player */
+.music-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.music-controls .icon-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #e8a8c8;
+  background: #fff7fb;
+  font-size: 16px;
+  line-height: 1;
+}
+.music-toggle {
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 12px !important;
+  background: #fff !important;
+}
+.music-seek {
+  flex: 1;
+  min-width: 80px;
+  accent-color: #d45b96;
+}
+.music-time {
+  font-size: 11px;
+  white-space: nowrap;
+  min-width: 72px;
+  text-align: center;
+}
+body.is-playing .vinyl-disc {
+  animation: vinyl-spin 4s linear infinite;
+}
+@keyframes vinyl-spin {
+  to { transform: rotate(360deg); }
+}
+.album-audio .audio-upload-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.audio-picker {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 10px;
+  font-weight: 600;
+}
+.audio-drafts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+.audio-draft {
+  border: 1px dashed #e2c5dc;
+  background: #fffafc;
+  border-radius: 10px;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+.audio-draft-meta small {
+  display: block;
+  color: #8a7a8f;
+  overflow-wrap: anywhere;
+}
+.audio-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.audio-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid #f0e2ef;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fffafc, #fbf7ff);
+}
+.audio-play {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 50%;
+  border: 1px solid #e7b4d0;
+  background: #ffe8f3;
+  color: #b14a82;
+  display: grid;
+  place-items: center;
+}
+.audio-play.is-playing {
+  background: #d45b96;
+  color: #fff;
+}
+.audio-copy {
+  flex: 1;
+  min-width: 0;
+}
+.audio-copy b {
+  display: block;
+  font-size: 15px;
+}
+.audio-copy p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #7c7188;
+}
+.audio-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+@media (max-width: 720px) {
+  .music-caption,
+  .vinyl-disc,
+  #musicBar > a[aria-label="心愿清单"] {
+    display: none;
+  }
+  .music-time {
+    display: none;
+  }
+}

@@ -96,10 +96,12 @@ test('catalog configuration and backup compatibility', { timeout: 30000 }, async
     let snapshot;
     await t.test('export includes tracks and import markers; restore retains custom track notes', async () => {
       snapshot = await read();
-      assert.equal(snapshot.schema_version, 4);
+      assert.equal(snapshot.schema_version, 5);
       assert.equal(snapshot.app_version, require('../package.json').version);
       assert.equal(snapshot.data.albums.length, 32);
       assert.equal(snapshot.data.album_tracks.length, 291);
+      assert.ok(Array.isArray(snapshot.data.album_audios));
+      assert.equal(snapshot.data.album_audios.length, 0);
       assert.equal(snapshot.data.catalog_imports.length, 1);
       snapshot.data.album_tracks[0].note = '我的曲目备注';
       snapshot.data.album_versions.push({ id: 1, album_id: snapshot.data.albums[0].id,

@@ -253,3 +253,30 @@ test("scrapbook routes, real collection data and rendering", async (t) => {
     store.profile = {};
   }
 });
+
+test("local audio player UI", async () => {
+  const { store } = await import("../public/js/store.js");
+  const { musicBar } = await import("../public/js/components.js");
+  const { audioSection } = await import("../public/js/audio.js");
+  store.can_edit = true;
+  store.albums = [{
+    id: 9,
+    group_id: 1,
+    group_name: "SEVENTEEN",
+    name: "FML",
+    cover: "",
+    versions: [],
+    tracks: [],
+    photos: [],
+    audios: [{ id: 1, title: "Super", src: "/uploads/demo.mp3", note: "title track" }],
+  }];
+  const bar = musicBar();
+  assert.match(bar, /data-action="player-toggle"/);
+  assert.match(bar, /data-player-seek/);
+  const section = audioSection(store.albums[0]);
+  assert.match(section, /本地音频/);
+  assert.match(section, /Super/);
+  assert.match(section, /data-play-audio="1"/);
+  assert.match(section, /data-audio-upload/);
+});
+

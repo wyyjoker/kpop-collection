@@ -139,5 +139,16 @@ export function rail() {
 }
 export function musicBar() {
   const a = store.albums[0];
-  return `<div class="music-identity">${image(a?.cover, a?.name || "音乐日记")}<span><b>${e(a?.name || "My Music Diary")}</b><small>${e(a?.group_name || "Collecting Happiness")}</small></span></div><span class="vinyl-disc" aria-hidden="true">♫</span><span class="music-caption">Good Music · Brighter Days ♡</span><div class="music-line"><span></span></div><small>音乐角 · 暂未接入播放</small><a data-nav href="/?view=wishlist" aria-label="心愿清单">${icon("heart")}</a><button data-action="backup" aria-label="备份收藏">${icon("backup")}</button>`;
+  return `<div class="music-identity">${image(a?.cover, a?.name || "音乐日记")}<span><b>${e(a?.name || "My Music Diary")}</b><small>${e(a?.group_name || "Collecting Happiness")}</small></span></div>
+    <div class="music-controls">
+      <button type="button" class="icon-button" data-action="player-prev" aria-label="上一首">‹</button>
+      <button type="button" class="icon-button music-toggle" data-action="player-toggle" aria-label="播放">▶</button>
+      <button type="button" class="icon-button" data-action="player-next" aria-label="下一首">›</button>
+    </div>
+    <span class="vinyl-disc" aria-hidden="true">♫</span>
+    <span class="music-caption">Local Audio ♡</span>
+    <input class="music-seek" data-player-seek type="range" min="0" max="1" value="0" step="1" aria-label="播放进度">
+    <span class="music-time" data-player-time>0:00 / 0:00</span>
+    <a data-nav href="/?view=wishlist" aria-label="心愿清单">${icon("heart")}</a>
+    <button data-action="backup" aria-label="备份收藏">${icon("backup")}</button>`;
 }

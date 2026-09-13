@@ -21,6 +21,8 @@ import { page } from "./js/pages.js";
 import * as dialogs from "./js/dialogs.js";
 import { registerAgentTools } from "./js/agent-tools.js";
 import { choosePhotos,captureCaption,removeDraft,savePhotos,deletePhoto,leavePhotos,hasPhotoChanges } from './js/photos.js';
+import { chooseAudios, removeAudioDraft, captureAudioDraft, saveAudios, playAudioById, deleteAudio, findAudio, hasAudioDrafts } from './js/audio.js';
+import { toggle as playerToggle, next as playerNext, prev as playerPrev, seekTo as playerSeek, refreshPlayerUi } from './js/player.js';
 
 let installPrompt;
 function toast(message) {
@@ -49,6 +51,7 @@ function render() {
     ["musicBar", musicBar()],
   ])
     document.getElementById(id).innerHTML = content;
+  refreshPlayerUi();
   if(!store.can_edit) {
     document.querySelectorAll('[data-action]').forEach(el=>{if(/^(add|edit|delete|mark)-/.test(el.dataset.action)||['backup','wish-album'].includes(el.dataset.action))el.hidden=true;});
     document.querySelector('#siteHeader').insertAdjacentHTML('beforeend',`<a class="owner-login" target="_top" href="/signin-with-chatgpt?return_to=${encodeURIComponent(location.pathname+location.search)}">主人登录</a>`);
@@ -62,7 +65,7 @@ function render() {
       );
 }
 function navigate(href, scroll = true) {
-  if(href!==location.pathname+location.search&&!leavePhotos())return;
+  if(href!==location.pathname+location.search&&(!leavePhotos()||hasAudioDrafts()))return;
   if (href !== location.pathname + location.search)
     history.pushState({}, "", href);
   dialogs.close();
@@ -75,7 +78,7 @@ function openAlbum(id) {
 }
 const redraw=async()=>{await refresh();render();};
 window.addEventListener('beforeunload',event=>{if(hasPhotoChanges()){event.preventDefault();event.returnValue='';}});
-document.addEventListener('input',event=>captureCaption(event.target));
+document.addEventListener('input',event=>{captureCaption(event.target);captureAudioDraft(event.target);});
 window.addEventListener("popstate", () => {
   dialogs.close();
   if (store.ready) render();
@@ -139,6 +142,13 @@ document.addEventListener("click", async (event) => {
     if(kind==='view-photo')return dialogs.viewPhoto(id);
     if(kind==='remove-photo-draft'){removeDraft(id);render();return;}
     if(kind==='delete-photo'){await deletePhoto(id,redraw);return;}
+    if(kind==='player-toggle')return playerToggle();
+    if(kind==='player-next')return playerNext();
+    if(kind==='player-prev')return playerPrev();
+    if(kind==='play-audio'){playAudioById(id);return;}
+    if(kind==='remove-audio-draft'){removeAudioDraft(id);render();return;}
+    if(kind==='delete-audio'){if(!store.can_edit)throw new Error('只有主人可以删除音频。');if(!confirm('确定删除这段本地音频吗？'))return;await deleteAudio(id,redraw);toast('音频已删除');return;}
+    if(kind==='edit-audio'){if(!store.can_edit)throw new Error('只有主人可以编辑音频。');return dialogs.editAudio(id);}
     if((/^(add|edit|delete|mark)-/.test(kind)||['backup','wish-album'].includes(kind))&&!store.can_edit)throw new Error('只有主人可以编辑，请使用主人账号登录。');
     if(kind==='edit-banner')return dialogs.editBanner();
     if (kind === "add-group") return dialogs.editGroup();
@@ -225,6 +235,14 @@ document.addEventListener("change", async (event) => {
     try{if(!store.can_edit)throw new Error('只有主人可以上传照片。');choosePhotos(input,route().album);render();}catch(error){toast(error.message);input.value='';}
     return;
   }
+  if(input.matches('[data-audio-files]')) {
+    try{chooseAudios(input,route().album||input.closest('[data-album-id]')?.dataset.albumId);render();}catch(error){toast(error.message);input.value='';}
+    return;
+  }
+  if(input.matches('[data-player-seek]')){
+    playerSeek(Number(input.value));
+    return;
+  }
   if (input.matches("[data-filter]"))
     navigate(url({ [input.name]: input.value, count: null }), false);
   if (input.matches("[data-version-status]")) {
@@ -242,6 +260,7 @@ document.addEventListener("submit", async (event) => {
   const form = event.target;
   event.preventDefault();
   if(form.matches('[data-photo-upload],[data-photo-caption]')){await savePhotos(form,redraw,toast).catch(error=>toast(error.message));return;}
+  if(form.matches('[data-audio-upload]')){await saveAudios(form,redraw,toast).catch(error=>toast(error.message));return;}
   if (form.matches("[data-search]")) {
     navigate(url({ view: "gallery", q: new FormData(form).get("q") }, true));
     return;
@@ -311,7 +330,15 @@ document.addEventListener("submit", async (event) => {
         purchase_currency: text("purchase_currency"),
       });
       albumId = payload.album_id;
-    } else if (kind === "profile") {
+    } else if (kind === "audio") {
+      const { updateAudio } = await import("./js/audio.js");
+      await updateAudio(form.dataset.id, { title: text("title"), note: text("note") });
+      await redraw();
+      dialogs.close();
+      toast("音频信息已更新 ♡");
+      return;
+    }
+    if (kind === "profile") {
       const payload = {
         name: text("name"),
         bio: text("bio"),
