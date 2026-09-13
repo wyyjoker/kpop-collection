@@ -7,10 +7,16 @@ function syncV3CenterState() {
 function hideUnusedPurchaseFields() {
   const form = document.querySelector('#versionDetailForm');
   if (!form) return;
-  for (const name of ['purchase_date', 'purchase_price']) {
+  for (const name of ['purchase_date', 'purchase_price', 'purchase_currency']) {
     const field = form.elements[name];
     const label = field?.closest('label');
-    if (label) label.classList.add('v3-field-hidden');
+    if (label) {
+      label.classList.add('v3-field-hidden');
+      label.closest('.two-columns')?.classList.add('v3-single-column');
+    }
+  }
+  for (const title of form.querySelectorAll('.detail-section-title')) {
+    if (title.textContent.trim() === '收藏与购买') title.textContent = '收藏信息';
   }
 }
 
