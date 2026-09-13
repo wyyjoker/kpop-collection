@@ -1,0 +1,182 @@
+.topbar-backup {
+  margin-left: auto;
+  margin-right: .5rem;
+}
+
+.card-actions,
+.album-actions,
+.hero-actions,
+.dialog-actions,
+.backup-actions {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.floating-actions {
+  position: absolute;
+  top: .75rem;
+  right: .75rem;
+  z-index: 4;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.group-card:hover .floating-actions,
+.group-card:focus-within .floating-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mini-button,
+.danger-button,
+.version-name-button {
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 10px;
+  background: rgba(255,255,255,.08);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.mini-button {
+  padding: .42rem .65rem;
+  font-size: .78rem;
+  backdrop-filter: blur(12px);
+}
+
+.mini-button:hover,
+.version-name-button:hover {
+  background: rgba(255,255,255,.14);
+}
+
+.mini-button.danger,
+.danger-button {
+  border-color: rgba(255,90,90,.28);
+  background: rgba(255,65,65,.11);
+  color: #ffb3b3;
+}
+
+.danger-button {
+  min-height: 40px;
+  padding: .6rem .9rem;
+}
+
+.danger-button:hover {
+  background: rgba(255,65,65,.2);
+}
+
+.danger-button.subtle {
+  background: rgba(12,12,16,.38);
+}
+
+.hero-actions {
+  margin-top: 1rem;
+}
+
+.album-actions {
+  justify-content: flex-end;
+}
+
+.version-row {
+  display: grid;
+  grid-template-columns: auto minmax(110px, 1fr) minmax(105px, auto) auto auto;
+  align-items: center;
+  gap: .45rem;
+}
+
+.version-name-button {
+  border: 0;
+  background: transparent;
+  padding: .3rem .2rem;
+  text-align: left;
+  font-weight: 650;
+}
+
+.wide-dialog {
+  width: min(680px, calc(100vw - 24px));
+}
+
+.detail-section-title {
+  margin-top: .35rem;
+  padding-top: .9rem;
+  border-top: 1px solid rgba(255,255,255,.1);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  opacity: .66;
+}
+
+.checkbox-label {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: .55rem;
+}
+
+.checkbox-label input {
+  width: auto !important;
+}
+
+.dialog-actions {
+  justify-content: space-between;
+  margin-top: .35rem;
+}
+
+.backup-panel {
+  display: grid;
+  gap: .75rem;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.035);
+}
+
+.backup-panel h3,
+.backup-panel p {
+  margin: 0;
+}
+
+.danger-zone {
+  border-color: rgba(255,90,90,.2);
+}
+
+@media (max-width: 720px) {
+  .topbar-backup {
+    margin-left: 0;
+  }
+
+  .floating-actions {
+    opacity: 1;
+    transform: none;
+  }
+
+  .album-heading {
+    align-items: flex-start;
+    gap: .75rem;
+  }
+
+  .album-actions {
+    justify-content: flex-start;
+  }
+
+  .version-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .version-row select {
+    grid-column: 2 / -1;
+    width: 100%;
+  }
+
+  .version-row .mini-button {
+    grid-row: 1;
+  }
+
+  .dialog-actions > * {
+    flex: 1;
+  }
+}
