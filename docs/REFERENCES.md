@@ -2,6 +2,14 @@
 
 K-pop Collection V0.1 uses ideas from existing K-pop collection projects as product and architecture references.
 
+## Final visual target
+
+The current UI/UX target is the **desktop pastel scrapbook / K-pop collection diary** style confirmed for this project.
+
+- Visual reference package: [`docs/design-target/README.md`](design-target/README.md)
+- The image `design-target/reference-style.webp` has the highest visual priority.
+- Future UI work should follow this direction instead of dark dashboards, generic SaaS layouts, e-commerce styling, or mobile-first app styling.
+
 ## Miyeon
 
 - Repository: `notelyoo/Miyeon`
