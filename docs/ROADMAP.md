@@ -13,7 +13,7 @@
 ## V0.1B — Collection Management
 
 - Edit and delete groups/albums/versions
-- Detailed purchase information editor
+- Collection detail editor
 - Better collection status controls
 - JSON import/export
 - SQLite backup and restore
@@ -30,13 +30,17 @@
 - Mobile bottom navigation and floating add button
 - Preserve V0.1B CRUD and backup behavior through a separate enhancement layer
 
-## V0.3 — Wishlist & Statistics
+## V0.3 — Wishlist & Collection Center
 
 - Dedicated Wishlist dashboard
-- Spending statistics
-- Group completion rankings
 - Missing-version overview
-- Purchase timeline and recent acquisitions
+- One-click mark as owned from Wishlist / missing lists
+- Group completion rankings
+- Release-year completion overview
+- Collection status distribution
+- Group and keyword filtering
+- No spending statistics
+- No purchase-date requirement
 
 ## V0.4 — PWA
 
