@@ -2,7 +2,7 @@
 
 个人 K-pop 实体专辑收藏管理器。
 
-当前版本：**V0.3**
+当前版本：**V0.4**
 
 ## 已实现
 
@@ -40,9 +40,23 @@
 - 不统计购买金额，不要求填写购买日期
 - 价格、货币、购买日期字段仅在数据库中保留用于旧备份兼容，当前界面不展示
 
+## V0.4 PWA + 手机 App 化
+
+- Web App Manifest，支持 Android / 桌面浏览器安装
+- iPhone / iPad “添加到主屏幕”适配与操作引导
+- 192 / 512 / Maskable / Apple Touch 四套应用图标
+- Service Worker 离线应用壳
+- API 收藏数据和用户上传封面保持 network-only，不缓存旧数据
+- 手机刘海 / 灵动岛 / 底部 Home Indicator 安全区适配
+- 独立 App 窗口（standalone）状态下优化顶部和底部导航
+- 网络断开时显示离线提示
+- PWA 快捷入口：Wishlist / 缺失版本
+
+> PWA 的 Service Worker 与“安装 App”能力要求安全上下文。电脑本机的 `http://127.0.0.1` / `localhost` 可用于开发；手机通过局域网 HTTP IP 访问时，通常需要 HTTPS 才能完整启用安装和离线能力。
+
 ## 技术栈
 
-Node.js + Express + SQLite + HTML/CSS/JavaScript
+Node.js + Express + SQLite + HTML/CSS/JavaScript + PWA
 
 ## 本地运行
 

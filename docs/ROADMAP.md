@@ -42,11 +42,18 @@
 - No spending statistics
 - No purchase-date requirement
 
-## V0.4 — PWA
+## V0.4 — PWA & Mobile App Experience
 
-- Installable mobile experience
-- Offline shell
-- Home-screen icon and app manifest
+- Web App Manifest and standalone display mode
+- Android / desktop install prompt
+- iOS Add to Home Screen guidance
+- 192 / 512 / maskable / Apple Touch app icons
+- Service Worker offline application shell
+- Keep API data and uploaded collection covers network-only
+- Offline status banner
+- Safe-area support for notch / Dynamic Island / Home Indicator
+- PWA shortcuts for Wishlist and missing versions
+- CI validation for manifest, icons, Service Worker and PWA endpoints
 
 ## Later
 
