@@ -72,7 +72,7 @@ function scheduleInsights() {
 
 function getAlbumYear(card) {
   const meta = card.querySelector('.album-heading p')?.textContent || '';
-  return meta.match(/(20\d{2})年/)?.[1] || '未注明年份';
+  return meta.match(/((?:19|20)\d{2})年/)?.[1] || '未注明年份';
 }
 
 function regroupAlbums() {
