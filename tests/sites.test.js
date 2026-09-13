@@ -9,8 +9,12 @@ test('Sites runtime: authentication, durable CRUD, images and atomic backup rest
   const origin='http://localhost';
   const call=(path,method='GET',body,headers={})=>mf.dispatchFetch(origin+path,{method,headers:{...(body && !(body instanceof FormData)?{'content-type':'application/json'}:{}),...headers},body:body instanceof FormData?body:body?JSON.stringify(body):undefined});
   const ok=async(path,method,body)=>{const r=await call(path,method,body);const data=await r.json();assert.ok(r.ok,JSON.stringify(data));return data;};
-  await t.test('owner authentication is mandatory outside localhost',async()=>{
-    assert.equal((await mf.dispatchFetch('https://example.test/api/library')).status,401);
+  await t.test('public browsing and owner-only editing are separated',async()=>{
+    assert.equal((await mf.dispatchFetch('https://example.test/api/library')).status,200);
+    assert.equal((await mf.dispatchFetch('https://example.test/api/export')).status,401);
+    assert.equal((await mf.dispatchFetch('https://example.test/api/session').then(r=>r.json())).can_edit,false);
+    assert.equal((await mf.dispatchFetch('https://example.test/api/session',{headers:{'oai-authenticated-user-id':'owner','oai-authenticated-user-email':'owner@example.test'}}).then(r=>r.json())).can_edit,true);
+    assert.equal((await mf.dispatchFetch('https://example.test/api/groups',{method:'POST',headers:{'content-type':'application/json','oai-authenticated-user-id':'visitor','oai-authenticated-user-email':'visitor@example.test'},body:JSON.stringify({name:'Blocked visitor'})})).status,403);
     assert.equal((await mf.dispatchFetch('https://example.test/api/health',{headers:{'oai-authenticated-user-id':'owner'}})).status,200);
     assert.equal((await call('/api/groups','POST',{name:'Blocked'},{origin:'https://other.test'})).status,403);
   });
@@ -34,7 +38,17 @@ test('Sites runtime: authentication, durable CRUD, images and atomic backup rest
     const upload=await ok('/api/upload','POST',form);
     await ok(`/api/albums/${album.id}`,'PUT',{cover:upload.path});
     const img=await call(upload.path);assert.equal(img.status,200);assert.deepEqual(Buffer.from(await img.arrayBuffer()),imageBytes);
-    backup=await ok('/api/export?assets=1');assert.equal(backup.assets.length,1);
+    const firstPhoto=await ok(`/api/albums/${album.id}/photos`,'POST',{src:upload.path,caption:'正面实拍'});
+    const secondUpload=await ok('/api/upload','POST',form);
+    await ok(`/api/albums/${album.id}/photos`,'POST',{src:secondUpload.path,caption:'背面实拍'});
+    const duplicate=await ok(`/api/albums/${album.id}/photos`,'POST',{src:upload.path,caption:'retry'});assert.equal(firstPhoto.id,duplicate.id);
+    await ok(`/api/photos/${firstPhoto.id}`,'PUT',{caption:'正面实拍\n珍藏版本'});
+    assert.equal((await call(`/api/photos/${firstPhoto.id}`,'PUT',{caption:23})).status,400);
+    backup=await ok('/api/export?assets=1');assert.equal(backup.assets.length,2);
+    assert.equal(backup.data.album_photos.length,2);
+    const visitor=await mf.dispatchFetch('https://example.test/api/library').then(r=>r.json());
+    assert.equal(visitor.can_edit,false);assert.equal(visitor.albums.find(a=>a.id===album.id).versions[0].purchase_price,undefined);
+    assert.equal((await mf.dispatchFetch(`https://example.test/api/photos/${firstPhoto.id}`,{method:'DELETE'})).status,401);
     assert.equal(backup.data.profile.name,'Cloud diary');
   });
   await t.test('JSON restore preserves images and rejects corrupt data without data loss',async()=>{
@@ -45,6 +59,7 @@ test('Sites runtime: authentication, durable CRUD, images and atomic backup rest
     await ok('/api/import','POST',backup);
     assert.equal((await ok('/api/profile')).name,'Cloud diary');
     const restored=(await ok('/api/library')).albums.find(a=>a.id===album.id);
+    assert.equal(restored.photos.length,2);assert.equal(restored.photos[0].caption,'正面实拍\n珍藏版本');
     assert.notEqual(restored.cover,backup.data.albums.find(a=>a.id===album.id).cover);
     assert.deepEqual(Buffer.from(await (await call(restored.cover)).arrayBuffer()),imageBytes);
     const conflict=structuredClone(backup);conflict.data.groups.push({...conflict.data.groups[0],id:999});
@@ -60,6 +75,7 @@ test('Sites runtime: authentication, durable CRUD, images and atomic backup rest
     await ok('/api/backup/database/restore','POST',form);
     assert.equal((await ok('/api/profile')).name,'Cloud diary');
     const restored=(await ok('/api/library')).albums.find(a=>a.id===album.id);
+    assert.equal(restored.photos.length,2);assert.equal(restored.photos[1].caption,'背面实拍');
     assert.deepEqual(Buffer.from(await (await call(restored.cover)).arrayBuffer()),imageBytes);
     const bad=new FormData();bad.append('database',new Blob(['not sqlite']),'bad.db');
     assert.equal((await call('/api/backup/database/restore','POST',bad)).status,400);

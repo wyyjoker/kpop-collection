@@ -36,12 +36,13 @@ async function groups(db) {
   return rows.map(r=>({...r,completion:r.version_count?Math.round(r.owned_count/r.version_count*100):0}));
 }
 async function library(db) {
-  const [groupRows,albums,versions,tracks]=await Promise.all([groups(db),all(db,`SELECT a.*,g.name group_name FROM albums a JOIN groups g ON g.id=a.group_id ORDER BY a.release_date DESC,a.id`),
+  const [groupRows,albums,versions,tracks,photos]=await Promise.all([groups(db),all(db,`SELECT a.*,g.name group_name FROM albums a JOIN groups g ON g.id=a.group_id ORDER BY a.release_date DESC,a.id`),
     all(db,`SELECT v.*,COALESCE(c.status,'missing') status,COALESCE(c.quantity,0) quantity,COALESCE(c.purchase_date,'') purchase_date,c.purchase_price,COALESCE(c.purchase_channel,'') purchase_channel,COALESCE(c.purchase_currency,'CNY') purchase_currency,COALESCE(c.opened,0) opened,COALESCE(c.notes,'') collection_notes FROM album_versions v LEFT JOIN collection c ON c.album_version_id=v.id ORDER BY v.album_id,v.version_name COLLATE NOCASE,v.id`),
-    all(db,'SELECT * FROM album_tracks ORDER BY album_id,disc_no,track_no,id')]);
-  const byId=new Map(albums.map(a=>[a.id,{...a,versions:[],tracks:[]}]));
+    all(db,'SELECT * FROM album_tracks ORDER BY album_id,disc_no,track_no,id'),all(db,'SELECT * FROM album_photos ORDER BY album_id,id')]);
+  const byId=new Map(albums.map(a=>[a.id,{...a,versions:[],tracks:[],photos:[]}]));
   for(const v of versions)byId.get(v.album_id)?.versions.push(v);
   for(const t of tracks)byId.get(t.album_id)?.tracks.push(t);
+  for(const p of photos)byId.get(p.album_id)?.photos.push(p);
   return {groups:groupRows,albums:[...byId.values()],runtime:'sites'};
 }
 async function collectAssets(env,snapshot) {
@@ -69,13 +70,14 @@ async function restore(env,snapshot) {
   const remap=value=>value?.startsWith('/uploads/')&&replacements.has(keyFor(value))?`/uploads/${replacements.get(keyFor(value)).key}`:value;
   for(const row of data.groups){row.cover=remap(row.cover);row.logo=remap(row.logo);}
   for(const row of [...data.albums,...data.album_versions])row.cover=remap(row.cover);
+  for(const row of data.album_photos)row.src=remap(row.src);
   data.profile.avatar=remap(data.profile.avatar);data.profile.hero_cover=remap(data.profile.hero_cover);
   // Never overwrite existing object keys. A failed SQL batch leaves live data intact.
   const safety=await exportData(env.DB),safetyKey=`backups/before-restore-${crypto.randomUUID()}.json`;
   await env.BUCKET.put(safetyKey,JSON.stringify(safety),{httpMetadata:{contentType:'application/json'}});
   try {
     for(const asset of replacements.values()){await env.BUCKET.put(asset.key,asset.bytes,{httpMetadata:{contentType:asset.type}});uploaded.push(asset.key);}
-    const deletes=['album_tracks','catalog_imports','collection','album_versions','albums','groups','profile'].map(table=>statement(env.DB,`DELETE FROM ${table}`));
+    const deletes=['album_photos','album_tracks','catalog_imports','collection','album_versions','albums','groups','profile'].map(table=>statement(env.DB,`DELETE FROM ${table}`));
     await env.DB.batch([...deletes,...insertStatements(env.DB,data)]);
   }catch(error){await Promise.all(uploaded.map(key=>env.BUCKET.delete(key)));throw error;}
   return {success:true,safety_backup:safetyKey,counts:{groups:data.groups.length,albums:data.albums.length,versions:data.album_versions.length,collection:data.collection.length}};
@@ -109,11 +111,13 @@ async function collection(db,versionId,body) {
   const fields=Object.keys(data);
   return statement(db,`INSERT INTO collection (${fields.join(',')}) VALUES (${fields.map(()=>'?').join(',')}) ON CONFLICT(album_version_id) DO UPDATE SET ${fields.slice(1).map(f=>`${f}=excluded.${f}`).join(',')} RETURNING *`,Object.values(data)).first();
 }
-async function api(request,env,url) {
+async function api(request,env,url,canEdit) {
   const path=url.pathname,method=request.method,db=env.DB;
   if(path==='/api/health')return json({ok:true,version:'0.6-sites',runtime:'sites'});
+  if(path==='/api/session')return json({can_edit:canEdit});
   await initialize(env);
-  if(path==='/api/library'&&method==='GET')return json(await library(db));
+  const publicLibrary=lib=>{if(!canEdit)for(const album of lib.albums)for(const v of album.versions)for(const field of ['purchase_price','purchase_date','purchase_channel','collection_notes'])delete v[field];return {...lib,can_edit:canEdit};};
+  if(path==='/api/library'&&method==='GET')return json(publicLibrary(await library(db)));
   if(path==='/api/groups'&&method==='GET')return json(await groups(db));
   if(path==='/api/stats'&&method==='GET') {
     const g=await groups(db),totals=g.reduce((a,r)=>({groups:a.groups+1,albums:a.albums+r.album_count,versions:a.versions+r.version_count,owned:a.owned+r.owned_count,wishlist:a.wishlist+r.wishlist_count,preordered:a.preordered+r.preordered_count}),{groups:0,albums:0,versions:0,owned:0,wishlist:0,preordered:0});
@@ -125,10 +129,27 @@ async function api(request,env,url) {
   }
   const match=path.match(/^\/api\/(groups|albums|versions)(?:\/(\d+))?$/);
   if(match){const [,entity,key]=match,recordId=key?id(key):null;
-    if(entity==='groups'&&method==='GET'&&recordId){const lib=await library(db),group=lib.groups.find(g=>g.id===recordId);if(!group)fail('未找到团体。',404);const albums=lib.albums.filter(a=>a.group_id===recordId);return json({group,albums,summary:{albums:group.album_count,versions:group.version_count,owned:group.owned_count,wishlist:group.wishlist_count,preordered:group.preordered_count,completion:group.completion}});}
+    if(entity==='groups'&&method==='GET'&&recordId){const lib=publicLibrary(await library(db)),group=lib.groups.find(g=>g.id===recordId);if(!group)fail('未找到团体。',404);const albums=lib.albums.filter(a=>a.group_id===recordId);return json({group,albums,summary:{albums:group.album_count,versions:group.version_count,owned:group.owned_count,wishlist:group.wishlist_count,preordered:group.preordered_count,completion:group.completion}});}
     if(method==='POST'&&!recordId||['PUT','DELETE'].includes(method)&&recordId)return entityMutation(db,entity,recordId,method,method==='DELETE'?null:await payload(request));
   }
   const v=path.match(/^\/api\/collection\/(\d+)$/);if(v&&method==='PUT')return json(await collection(db,id(v[1]),await payload(request)));
+  const photoAlbum=path.match(/^\/api\/albums\/(\d+)\/photos$/);
+  if(photoAlbum&&method==='POST') {
+    const albumId=id(photoAlbum[1]),body=await payload(request);
+    if(!await first(db,'SELECT id FROM albums WHERE id=?',[albumId]))fail('专辑不存在。',404);
+    if(!body||typeof body!=='object'||typeof body.src!=='string'||!body.src.startsWith('/uploads/'))fail('请先上传实物照片。');
+    const key=keyFor(body.src);if(!await env.BUCKET.head(key))fail('上传的照片不存在。',404);
+    const caption=text(body.caption,2000);
+    await statement(db,'INSERT INTO album_photos (album_id,src,caption) VALUES (?,?,?) ON CONFLICT(album_id,src) DO NOTHING',[albumId,body.src,caption]).run();
+    return json(await first(db,'SELECT * FROM album_photos WHERE album_id=? AND src=?',[albumId,body.src]),201);
+  }
+  const photo=path.match(/^\/api\/photos\/(\d+)$/);
+  if(photo&&['PUT','DELETE'].includes(method)) {
+    const photoId=id(photo[1]);if(!await first(db,'SELECT id FROM album_photos WHERE id=?',[photoId]))fail('照片不存在。',404);
+    if(method==='DELETE'){await statement(db,'DELETE FROM album_photos WHERE id=?',[photoId]).run();return json({success:true});}
+    const body=await payload(request);if(typeof body?.caption!=='string')fail('请填写照片描述。');
+    return json(await statement(db,'UPDATE album_photos SET caption=? WHERE id=? RETURNING *',[text(body.caption,2000),photoId]).first());
+  }
   if(path==='/api/upload'&&method==='POST') {
     const data=await form(request,MAX_UPLOAD+65536),file=data.get('image');if(!file?.arrayBuffer||file.size<1||file.size>MAX_UPLOAD)fail('请选择不超过 8 MB 的图片。');
     const extensions={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif','image/avif':'avif'},ext=extensions[file.type];if(!ext)fail('支持 PNG、JPEG、WebP、GIF、AVIF 图片。');
@@ -143,14 +164,17 @@ async function api(request,env,url) {
 export default {
   async fetch(request,env,ctx) {
     const url=new URL(request.url),local=env.LOCAL_PREVIEW==='true'&&['localhost','127.0.0.1'].includes(url.hostname);
-    // The Sites dispatcher enforces owner-only access and supplies signed-in identity.
-    if(!local&&!request.headers.get('oai-authenticated-user-id'))return json({error:'请先登录你的 ChatGPT 账号。'},401);
+    // Sites authenticates these headers. Missing owner configuration fails closed.
+    const user=request.headers.get('oai-authenticated-user-id'),email=request.headers.get('oai-authenticated-user-email')?.trim().toLowerCase();
+    const canEdit=local||!!(user&&env.OWNER_EMAIL&&email===env.OWNER_EMAIL.trim().toLowerCase());
+    const privateRead=url.pathname==='/api/export'||url.pathname.startsWith('/api/backup')||url.pathname==='/api/import';
+    if((!['GET','HEAD'].includes(request.method)||privateRead)&&!canEdit)return json({error:'只有站点主人可以修改或备份收藏，请使用主人的账号登录。'},user?403:401);
     if(!['GET','HEAD'].includes(request.method)) {
       const origin=request.headers.get('origin');
       if(request.headers.get('sec-fetch-site')==='cross-site'||origin&&origin!==url.origin)return json({error:'不允许跨站修改收藏。'},403);
     }
     try {
-      if(url.pathname.startsWith('/api/'))return await api(request,env,url);
+      if(url.pathname.startsWith('/api/'))return await api(request,env,url,canEdit);
       if(url.pathname.startsWith('/uploads/')) {
         if(!['GET','HEAD'].includes(request.method))return json({error:'不支持此操作。'},405);
         await initialize(env);const object=await env.BUCKET.get(keyFor(url.pathname));if(!object)return json({error:'图片不存在。'},404);

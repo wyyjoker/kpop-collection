@@ -1,0 +1,45 @@
+[hidden] { display:none !important; }
+.banner-edit { position:absolute; right:20px; bottom:14px; z-index:3; background:#fffdf9; box-shadow:0 3px 12px #42315320; }
+.reference-custom-photo,.reference-custom-photo .picture { height:51.6%; }
+.reference-custom-photo .picture { width:100%; height:100%; display:block; }
+.reference-custom-photo img { width:100%; height:100%; }
+.owner-login { font-size:14px; white-space:nowrap; color:#6d50a2; }
+.banner-current { max-height:220px; display:block; }
+.banner-current img { max-height:220px; object-fit:contain; }
+body[data-view="album"] #hero,body[data-view="album"] #favoriteStrip,body[data-view="album"] #diaryRail,body[data-view="album"] #sidebar { display:none; }
+body[data-view="album"] .page-layout { display:block; max-width:1160px; margin:auto; padding:26px 24px 100px; }
+.album-breadcrumb { display:flex; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:20px; font-size:14px; }
+.album-breadcrumb a { color:#7054ab; }
+.album-page-intro { display:flex; align-items:center; gap:28px; padding:28px; margin-bottom:24px; }
+.album-page-intro > .picture { width:170px; height:170px; flex-shrink:0; display:block; }
+.album-page-intro img { width:100%; height:100%; object-fit:contain; }
+.album-page-intro h1 { font-size:clamp(26px,3.5vw,40px); line-height:1.2; margin:10px 0; }
+.album-page-intro p { font-size:16px; line-height:1.6; }
+.album-eyebrow { color:#7e699c; letter-spacing:0.04em; }
+.physical-album { padding:28px; margin-bottom:24px; }
+.physical-album .section-heading { align-items:flex-start; }
+.physical-album .section-heading > div { flex-wrap:wrap; }
+.photo-upload-form { margin:24px 0; padding:20px; border:1px dashed #b9a5db; background:#f8f5ff; border-radius:12px; }
+.photo-picker { display:inline-flex; flex-direction:column; gap:12px; font-size:16px; font-weight:600; }
+.photo-picker input { max-width:100%; font-size:14px; }
+.photo-drafts,.physical-photo-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; }
+.photo-drafts:not(:empty) { margin:20px 0; }
+.photo-draft,.physical-photo { min-width:0; padding:12px; background:#fff; border:1px solid #e4dced; border-radius:10px; box-shadow:0 4px 15px #7658980a; }
+.photo-draft > img { display:block; width:100%; height:190px; object-fit:contain; background:#f6f3f8; border-radius:6px; margin-bottom:12px; }
+.physical-photo .photo-full { display:block; width:100%; padding:0; border:0; background:#f8f6fa; border-radius:6px; overflow:hidden; }
+.physical-photo .picture { display:block; width:100%; aspect-ratio:1; }
+.physical-photo img { width:100%; height:100%; object-fit:contain; }
+.physical-photo form { margin-top:16px; }
+.physical-album label { display:flex; flex-direction:column; gap:8px; font-size:14px; }
+.physical-album textarea { width:100%; min-height:100px; padding:12px; font:inherit; font-size:16px; line-height:1.6; resize:vertical; border:1px solid #dcd2e8; border-radius:8px; color:#32304d; background:#fdfcff; }
+.physical-album textarea:focus { outline:2px solid #b799e8; outline-offset:2px; }
+.photo-actions { display:flex; justify-content:space-between; gap:10px; margin-top:10px; flex-wrap:wrap; }
+.photo-actions button,.photo-draft button { font-size:14px; }
+.photo-caption { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.7; font-size:16px; margin:16px 4px 4px; }
+.photo-progress { color:#7652a1; font-size:14px; }
+.photo-viewer .picture { display:block; width:100%; }
+.photo-viewer img { display:block; width:100%; max-height:70vh; object-fit:contain; }
+.photo-viewer p { font-size:16px; line-height:1.7; }
+body[data-view="album"] .version-section { margin-bottom:24px; }
+@media(max-width:800px) { .photo-drafts,.physical-photo-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .album-page-intro { gap:18px; padding:20px; } .album-page-intro>.picture { width:120px; height:120px; } .physical-album { padding:20px; } }
+@media(max-width:520px) { body[data-view="album"] .page-layout { padding:18px 12px 90px; } .photo-drafts,.physical-photo-grid { grid-template-columns:1fr; } .album-page-intro { align-items:flex-start; flex-direction:column; } .album-page-intro>.picture { width:140px; height:140px; } .physical-album { padding:16px; } .photo-upload-form { padding:14px; } .banner-edit { right:8px; bottom:6px; padding:5px 8px; font-size:12px; } .owner-login { font-size:12px; } }

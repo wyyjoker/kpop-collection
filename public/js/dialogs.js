@@ -80,10 +80,18 @@ export function editProfile() {
     form(
       "profile",
       1,
-      `${field("昵称", "name", p.name, "text", 'maxlength="100" placeholder="你希望被怎样称呼？"')}${textarea("个人简介", "bio", p.bio)}<div class="two-columns">${uploadField("个人头像", "avatar_file")}${uploadField("首页主视觉照片", "hero_file")}</div><p class="form-hint">主视觉可上传团体照或你的收藏角照片；不上传则展示真实专辑封面。</p><fieldset><legend>我的本命团</legend>${store.groups.length ? store.groups.map((g) => `<label class="checkbox-label"><input type="checkbox" name="favorite_group_ids" value="${g.id}" ${(p.favorite_group_ids || []).includes(g.id) ? "checked" : ""}>${e(g.name)}</label>`).join("") : "先添加一个团体，再选择你的本命团。"}</fieldset>${textarea("我的笔记 / 小小日常", "diary", p.diary, 20000)}`,
+      `${field("昵称", "name", p.name, "text", 'maxlength="100" placeholder="你希望被怎样称呼？"')}${textarea("个人简介", "bio", p.bio)}<div class="two-columns">${uploadField("个人头像", "avatar_file")}${uploadField("首页主视觉照片", "hero_file")}</div><p class="form-hint">主视觉可上传团体照或你的收藏角照片；不上传则保留当前照片。首页横幅设置中可恢复默认女团照片。</p><fieldset><legend>我的本命团</legend>${store.groups.length ? store.groups.map((g) => `<label class="checkbox-label"><input type="checkbox" name="favorite_group_ids" value="${g.id}" ${(p.favorite_group_ids || []).includes(g.id) ? "checked" : ""}>${e(g.name)}</label>`).join("") : "先添加一个团体，再选择你的本命团。"}</fieldset>${textarea("我的笔记 / 小小日常", "diary", p.diary, 20000)}`,
     ),
     true,
   );
+}
+export function editBanner() {
+  show('设置横幅照片',form('banner','',`<p>替换横幅中间的照片，保留标题和两侧手账装饰。</p>${store.profile.hero_cover?image(store.profile.hero_cover,'当前横幅照片','banner-current'):''}${uploadField('上传新的横幅照片','hero_file')}<p class="form-hint">建议使用横向合照。支持 PNG、JPEG、WebP、GIF、AVIF，每张最多 8 MB。</p><label class="checkbox-label"><input type="checkbox" name="reset_banner">恢复参考图中的默认女团照片</label>`));
+}
+export function viewPhoto(id) {
+  const photo=store.albums.flatMap(a=>a.photos||[]).find(p=>p.id===Number(id));
+  if(!photo)throw new Error('照片已不存在。');
+  show('实物照片',`<div class="photo-viewer">${image(photo.src,photo.caption||'专辑实物照片')}<p class="preserve-lines">${e(photo.caption)}</p></div>`,true);
 }
 export function backup() {
   show(

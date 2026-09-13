@@ -5,12 +5,13 @@ const root = path.resolve(import.meta.dirname, '..');
 const response = await fetch('http://127.0.0.1:3000/api/export');
 if (!response.ok) throw new Error(`Local export failed: ${response.status}`);
 const snapshot = await response.json();
-if (snapshot.format !== 'kpop-collection-backup' || snapshot.schema_version !== 3) throw new Error('Unexpected backup format');
+if (snapshot.format !== 'kpop-collection-backup' || ![3,4].includes(snapshot.schema_version)) throw new Error('Unexpected backup format');
 await fs.mkdir(path.join(root, 'sites'), { recursive: true });
 await fs.writeFile(path.join(root, 'sites/bootstrap.json'), JSON.stringify(snapshot));
 const paths = new Set([
   ...snapshot.data.groups.flatMap(row => [row.cover, row.logo]), ...snapshot.data.albums.map(row => row.cover),
   ...snapshot.data.album_versions.map(row => row.cover), snapshot.data.profile.avatar, snapshot.data.profile.hero_cover,
+  ...(snapshot.data.album_photos??[]).map(row=>row.src),
 ].filter(value => value?.startsWith('/uploads/')));
 const assets = [];
 for (const url of paths) {

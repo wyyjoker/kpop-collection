@@ -12,7 +12,7 @@ const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '127.0.0.1';
 const DB_PATH = path.resolve(process.env.DB_PATH || path.join(__dirname, 'data', 'kpop-collection.db'));
-const UPLOAD_DIR = path.join(__dirname, 'public', 'uploads');
+const UPLOAD_DIR = path.resolve(process.env.UPLOAD_DIR || path.join(__dirname, 'public', 'uploads'));
 const RESTORE_TMP_DIR = path.join(path.dirname(DB_PATH), '.restore-tmp');
 const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB || 8);
 const MAX_BACKUP_MB = Number(process.env.MAX_BACKUP_MB || 100);
@@ -31,6 +31,7 @@ app.use(helmet({
 }));
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads',express.static(UPLOAD_DIR));
 app.use(express.static(path.join(__dirname, 'public')));
 
 let db;
@@ -129,6 +130,12 @@ function initializeDatabase(database) {
       favorite_group_ids TEXT NOT NULL DEFAULT '[]'
     )`);
     database.run('INSERT OR IGNORE INTO profile (id) VALUES (1)');
+    database.run(`CREATE TABLE IF NOT EXISTS album_photos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, album_id INTEGER NOT NULL,
+      src TEXT NOT NULL, caption TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE,
+      UNIQUE(album_id,src)
+    )`);
     database.run(`CREATE TRIGGER IF NOT EXISTS prune_profile_favorites AFTER DELETE ON groups
       BEGIN
         UPDATE profile SET favorite_group_ids = (
@@ -394,6 +401,28 @@ app.get('/api/profile', async (_req, res) => {
     handleDbError(res, error);
   }
 });
+app.get('/api/session', (_req,res)=>res.json({can_edit:true}));
+app.post('/api/albums/:id/photos', async(req,res)=>{
+  try {
+    const albumId=asId(req.params.id), {src,caption=''}=req.body||{};
+    if(!albumId||!await get('SELECT id FROM albums WHERE id=?',[albumId]))return res.status(404).json({error:'专辑不存在。'});
+    if(typeof src!=='string'||!/^\/uploads\/[a-zA-Z0-9_.-]+$/.test(src)||!fs.existsSync(path.join(UPLOAD_DIR,path.basename(src))))return res.status(400).json({error:'请先上传实物照片。'});
+    if(typeof caption!=='string'||caption.length>2000)return res.status(400).json({error:'照片描述最多 2000 字。'});
+    await run('INSERT INTO album_photos (album_id,src,caption) VALUES (?,?,?) ON CONFLICT(album_id,src) DO NOTHING',[albumId,src,caption.trim()]);
+    res.status(201).json(await get('SELECT * FROM album_photos WHERE album_id=? AND src=?',[albumId,src]));
+  }catch(error){handleDbError(res,error);}
+});
+app.put('/api/photos/:id',async(req,res)=>{
+  try {
+    const photoId=asId(req.params.id),caption=req.body?.caption;
+    if(typeof caption!=='string'||caption.length>2000)return res.status(400).json({error:'照片描述最多 2000 字。'});
+    if(!await get('SELECT id FROM album_photos WHERE id=?',[photoId]))return res.status(404).json({error:'照片不存在。'});
+    await run('UPDATE album_photos SET caption=? WHERE id=?',[caption.trim(),photoId]);res.json(await get('SELECT * FROM album_photos WHERE id=?',[photoId]));
+  }catch(error){handleDbError(res,error);}
+});
+app.delete('/api/photos/:id',async(req,res)=>{
+  try {const result=await run('DELETE FROM album_photos WHERE id=?',[asId(req.params.id)]);if(!result.changes)return res.status(404).json({error:'照片不存在。'});res.json({success:true});}catch(error){handleDbError(res,error);}
+});
 
 app.put('/api/profile', async (req, res) => {
   try {
@@ -407,7 +436,7 @@ app.put('/api/profile', async (req, res) => {
 
 app.get('/api/library', async (_req, res) => {
   try {
-    const [groups, albums, versions, tracks] = await Promise.all([
+    const [groups, albums, versions, tracks, photos] = await Promise.all([
       readGroups(),
       all(`SELECT a.*, g.name AS group_name FROM albums a JOIN groups g ON g.id = a.group_id
         ORDER BY CASE WHEN a.release_date = '' THEN 1 ELSE 0 END, a.release_date DESC, a.name COLLATE NOCASE, a.id`),
@@ -423,11 +452,13 @@ app.get('/api/library', async (_req, res) => {
         FROM album_versions v LEFT JOIN collection c ON c.album_version_id = v.id
         ORDER BY v.album_id, v.version_name COLLATE NOCASE, v.id`),
       all('SELECT * FROM album_tracks ORDER BY album_id, disc_no, track_no, id'),
+      all('SELECT * FROM album_photos ORDER BY album_id,id'),
     ]);
-    const albumsById = new Map(albums.map((album) => [album.id, { ...album, versions: [], tracks: [] }]));
+    const albumsById = new Map(albums.map((album) => [album.id, { ...album, versions: [], tracks: [], photos: [] }]));
     for (const version of versions) albumsById.get(version.album_id)?.versions.push(version);
     for (const track of tracks) albumsById.get(track.album_id)?.tracks.push(track);
-    res.json({ groups, albums: [...albumsById.values()] });
+    for (const photo of photos) albumsById.get(photo.album_id)?.photos.push(photo);
+    res.json({ groups, albums: [...albumsById.values()],can_edit:true });
   } catch (error) {
     handleDbError(res, error);
   }
@@ -754,7 +785,7 @@ app.post('/api/upload', (req, res) => {
 
 app.get('/api/export', async (_req, res) => {
   try {
-    const [groups, albums, albumVersions, collection, albumTracks, catalogImports, profile] = await Promise.all([
+    const [groups, albums, albumVersions, collection, albumTracks, catalogImports, profile, albumPhotos] = await Promise.all([
       all('SELECT * FROM groups ORDER BY id'),
       all('SELECT * FROM albums ORDER BY id'),
       all('SELECT * FROM album_versions ORDER BY id'),
@@ -762,13 +793,14 @@ app.get('/api/export', async (_req, res) => {
       all('SELECT * FROM album_tracks ORDER BY id'),
       all('SELECT * FROM catalog_imports ORDER BY catalog_key'),
       readProfile(),
+      all('SELECT * FROM album_photos ORDER BY id'),
     ]);
     const snapshot = {
       format: 'kpop-collection-backup',
-      schema_version: 3,
+      schema_version: 4,
       app_version: APP_VERSION,
       exported_at: new Date().toISOString(),
-      data: { groups, albums, album_versions: albumVersions, collection, album_tracks: albumTracks, catalog_imports: catalogImports, profile },
+      data: { groups, albums, album_versions: albumVersions, collection, album_tracks: albumTracks, catalog_imports: catalogImports, profile,album_photos:albumPhotos },
     };
     const stamp = new Date().toISOString().slice(0, 10);
     res.setHeader('Content-Disposition', `attachment; filename="kpop-collection-${stamp}.json"`);
@@ -795,6 +827,8 @@ app.post('/api/import', async (req, res) => {
 
   let transactionStarted = false;
   try {
+    if((snapshot.schema_version>=4||data.album_photos!==undefined)&&!Array.isArray(data.album_photos))throw Object.assign(new Error('备份缺少实物相册。'),{status:400});
+    for(const p of data.album_photos||[])if(!p||!Number.isSafeInteger(p.id)||p.id<1||!data.albums.some(a=>a.id===p.album_id)||typeof p.src!=='string'||!/^\/uploads\/[a-zA-Z0-9_.-]+$/.test(p.src)||typeof p.caption!=='string'||p.caption.length>2000)throw Object.assign(new Error('实物相册备份格式或关联无效。'),{status:400});
     // Old backups have no personal data; reset to the same defaults as a new database.
     const profile = { ...EMPTY_PROFILE, ...validateProfile(
       snapshot.schema_version >= 3 || data.profile !== undefined ? data.profile : EMPTY_PROFILE,
@@ -802,6 +836,7 @@ app.post('/api/import', async (req, res) => {
     ) };
     await run('BEGIN IMMEDIATE TRANSACTION');
     transactionStarted = true;
+    await run('DELETE FROM album_photos');
     await run('DELETE FROM album_tracks');
     await run('DELETE FROM catalog_imports');
     await run('DELETE FROM collection');
@@ -859,6 +894,7 @@ app.post('/api/import', async (req, res) => {
       await run(`INSERT INTO catalog_imports (catalog_key, imported_at, item_count) VALUES (?, ?, ?)`,
         [row.catalog_key, row.imported_at || new Date().toISOString(), row.item_count]);
     }
+    for(const row of data.album_photos||[])await run('INSERT INTO album_photos (id,album_id,src,caption,created_at) VALUES (?,?,?,?,?)',[row.id,row.album_id,row.src,row.caption,row.created_at||new Date().toISOString()]);
     await run('COMMIT');
     res.json({ success: true, counts: {
       groups: data.groups.length,

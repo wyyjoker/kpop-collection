@@ -20,6 +20,7 @@ import {
 import { page } from "./js/pages.js";
 import * as dialogs from "./js/dialogs.js";
 import { registerAgentTools } from "./js/agent-tools.js";
+import { choosePhotos,captureCaption,removeDraft,savePhotos,deletePhoto,leavePhotos,hasPhotoChanges } from './js/photos.js';
 
 let installPrompt;
 function toast(message) {
@@ -32,11 +33,12 @@ function toast(message) {
 function render() {
   const r = route();
   document.body.dataset.view = r.view;
+  document.body.dataset.editable=String(!!store.can_edit);
   document.body.classList.toggle(
     "reference-masthead",
     r.view === "home" || r.view === "collection",
   );
-  document.title = `${navItems.find(([v]) => v === r.view)?.[1] || "团体日记"} · K-pop 收藏日记`;
+  document.title = `${r.view==='album'?(findAlbum(r.album)?.name||'专辑详情'):navItems.find(([v]) => v === r.view)?.[1] || "团体日记"} · K-pop 收藏日记`;
   for (const [id, content] of [
     ["siteHeader", header(r)],
     ["hero", hero(r)],
@@ -47,6 +49,10 @@ function render() {
     ["musicBar", musicBar()],
   ])
     document.getElementById(id).innerHTML = content;
+  if(!store.can_edit) {
+    document.querySelectorAll('[data-action]').forEach(el=>{if(/^(add|edit|delete|mark)-/.test(el.dataset.action)||['backup','wish-album'].includes(el.dataset.action))el.hidden=true;});
+    document.querySelector('#siteHeader').insertAdjacentHTML('beforeend',`<a class="owner-login" target="_top" href="/signin-with-chatgpt?return_to=${encodeURIComponent(location.pathname+location.search)}">主人登录</a>`);
+  }
   if (installPrompt)
     document
       .querySelector("#siteHeader")
@@ -56,12 +62,20 @@ function render() {
       );
 }
 function navigate(href, scroll = true) {
+  if(href!==location.pathname+location.search&&!leavePhotos())return;
   if (href !== location.pathname + location.search)
     history.pushState({}, "", href);
   dialogs.close();
   render();
   if (scroll) window.scrollTo({ top: 0, behavior: "instant" });
 }
+function openAlbum(id) {
+  if(!findAlbum(id))throw new Error('专辑已不存在，请刷新后重试。');
+  navigate(url({view:'album',album:id},true));
+}
+const redraw=async()=>{await refresh();render();};
+window.addEventListener('beforeunload',event=>{if(hasPhotoChanges()){event.preventDefault();event.returnValue='';}});
+document.addEventListener('input',event=>captureCaption(event.target));
 window.addEventListener("popstate", () => {
   dialogs.close();
   if (store.ready) render();
@@ -116,12 +130,17 @@ document.addEventListener("click", async (event) => {
   const action = event.target.closest("[data-action]");
   try {
     if (album) {
-      dialogs.openAlbum(album.dataset.album);
+      openAlbum(album.dataset.album);
       return;
     }
     if (!action) return;
     const { action: kind, id } = action.dataset;
     if (kind === "close-dialog") return dialogs.close();
+    if(kind==='view-photo')return dialogs.viewPhoto(id);
+    if(kind==='remove-photo-draft'){removeDraft(id);render();return;}
+    if(kind==='delete-photo'){await deletePhoto(id,redraw);return;}
+    if((/^(add|edit|delete|mark)-/.test(kind)||['backup','wish-album'].includes(kind))&&!store.can_edit)throw new Error('只有主人可以编辑，请使用主人账号登录。');
+    if(kind==='edit-banner')return dialogs.editBanner();
     if (kind === "add-group") return dialogs.editGroup();
     if (kind === "edit-group") return dialogs.editGroup(id);
     if (kind === "add-album") {
@@ -132,7 +151,7 @@ document.addEventListener("click", async (event) => {
       return dialogs.editAlbum(null, id || route().group);
     }
     if (kind === "edit-album") return dialogs.editAlbum(id);
-    if (kind === "wish-album") return dialogs.openAlbum(id, true);
+    if (kind === "wish-album") return openAlbum(id);
     if (kind === "add-version")
       return dialogs.editVersion(null, id, action.dataset.wish === "1");
     if (kind === "edit-version") return dialogs.editVersion(id);
@@ -166,7 +185,7 @@ document.addEventListener("click", async (event) => {
         kind === "mark-owned" ? "owned" : "wishlist",
       );
       if (document.querySelector("#editorDialog").open)
-        dialogs.openAlbum(albumId, kind === "mark-wish");
+        openAlbum(albumId);
       return;
     }
     if (kind.startsWith("delete-")) {
@@ -190,7 +209,7 @@ document.addEventListener("click", async (event) => {
       );
       await refresh();
       dialogs.close();
-      if (entity === "group" && route().group === String(id))
+      if ((entity === "group" && route().group === String(id)) || (entity==='album'&&route().album===String(id)))
         navigate("/?view=gallery");
       else render();
       toast("记录已删除");
@@ -202,13 +221,17 @@ document.addEventListener("click", async (event) => {
 });
 document.addEventListener("change", async (event) => {
   const input = event.target;
+  if(input.matches('[data-photo-files]')) {
+    try{if(!store.can_edit)throw new Error('只有主人可以上传照片。');choosePhotos(input,route().album);render();}catch(error){toast(error.message);input.value='';}
+    return;
+  }
   if (input.matches("[data-filter]"))
     navigate(url({ [input.name]: input.value, count: null }), false);
   if (input.matches("[data-version-status]")) {
     input.disabled = true;
     try {
       const id = await updateStatus(input.dataset.versionStatus, input.value);
-      dialogs.openAlbum(id);
+      if(route().view!=='album')openAlbum(id);
     } catch (error) {
       toast(error.message);
       input.disabled = false;
@@ -218,11 +241,13 @@ document.addEventListener("change", async (event) => {
 document.addEventListener("submit", async (event) => {
   const form = event.target;
   event.preventDefault();
+  if(form.matches('[data-photo-upload],[data-photo-caption]')){await savePhotos(form,redraw,toast).catch(error=>toast(error.message));return;}
   if (form.matches("[data-search]")) {
     navigate(url({ view: "gallery", q: new FormData(form).get("q") }, true));
     return;
   }
   if (!form.dataset.editor) return;
+  if(!store.can_edit){toast('只有主人可以编辑。');return;}
   const kind = form.dataset.editor,
     data = new FormData(form),
     button = form.querySelector('button[type="submit"]'),
@@ -232,7 +257,12 @@ document.addEventListener("submit", async (event) => {
   errorBox.hidden = true;
   try {
     let albumId;
-    if (kind === "group" || kind === "album") {
+    if(kind==='banner') {
+      const file=data.get('hero_file'),reset=data.get('reset_banner');
+      if(reset&&file?.size)throw new Error('请选择上传新照片，或恢复默认，不要同时选择。');
+      if(!reset&&!file?.size)throw new Error('请选择横幅照片。');
+      await save('/api/profile',{hero_cover:reset?'':await upload(file)});
+    } else if (kind === "group" || kind === "album") {
       const payload = Object.fromEntries(
         (kind === "group"
           ? ["name", "korean_name", "company", "debut_date"]
@@ -314,7 +344,7 @@ document.addEventListener("submit", async (event) => {
     await refresh();
     render();
     dialogs.close();
-    if (albumId) dialogs.openAlbum(albumId);
+    if (albumId) openAlbum(albumId);
     toast(kind.startsWith("import") ? "收藏已恢复" : "已保存这份喜欢 ♡");
   } catch (error) {
     errorBox.textContent = error.message;
@@ -351,8 +381,9 @@ if ("serviceWorker" in navigator)
     .register("/sw.js")
     .then((r) => r.update())
     .catch(console.warn);
+if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!hasPhotoChanges())location.reload();},{once:true});
 refresh()
-  .then(() => { render(); registerAgentTools({store,route,navigate,url,openAlbum:dialogs.openAlbum}); })
+  .then(() => { render(); registerAgentTools({store,route,navigate,url,openAlbum}); })
   .catch((error) => {
     document.querySelector("#pageContent").innerHTML = empty(
       "日记暂时没有打开",

@@ -11,7 +11,7 @@ const emptyProfile = { id: 1, name: '', bio: '', avatar: '', hero_cover: '', dia
 
 test('catalog configuration and backup compatibility', { timeout: 30000 }, async (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kpop-regression-'));
-  const env = { ...process.env, HOST: '127.0.0.1', PORT: '0' };
+  const env = { ...process.env, HOST: '127.0.0.1', PORT: '0',UPLOAD_DIR:path.join(dir,'uploads') };
   for (const key of Object.keys(env)) {
     if (key.toUpperCase() === 'DB_PATH') delete env[key];
   }
@@ -96,7 +96,7 @@ test('catalog configuration and backup compatibility', { timeout: 30000 }, async
     let snapshot;
     await t.test('export includes tracks and import markers; restore retains custom track notes', async () => {
       snapshot = await read();
-      assert.equal(snapshot.schema_version, 3);
+      assert.equal(snapshot.schema_version, 4);
       assert.equal(snapshot.app_version, require('../package.json').version);
       assert.equal(snapshot.data.albums.length, 32);
       assert.equal(snapshot.data.album_tracks.length, 291);
@@ -282,8 +282,22 @@ test('catalog configuration and backup compatibility', { timeout: 30000 }, async
       const empty = { format: 'kpop-collection-backup', schema_version: 1,
         data: { groups: [], albums: [], album_versions: [], collection: [] } };
       assert.equal((await restore(empty)).status, 200);
-      assert.deepEqual(await api('/library'), { groups: [], albums: [] });
+      assert.deepEqual(await api('/library'), { groups: [], albums: [], can_edit:true });
       assert.deepEqual(await api('/profile'), emptyProfile);
+    });
+    await t.test('physical photo captions and multiple photos survive local JSON restore',async()=>{
+      const group=await api('/groups','POST',{name:'Photo test'},201);
+      const album=await api('/albums','POST',{group_id:group.id,name:'My physical album'},201);
+      const form=new FormData();form.append('image',new Blob([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jC1sAAAAASUVORK5CYII=','base64')],{type:'image/png'}),'test.png');
+      const uploaded=await fetch(`${base}/api/upload`,{method:'POST',body:form}).then(r=>r.json());
+      const p=await api(`/albums/${album.id}/photos`,'POST',{src:uploaded.path,caption:'第一张实拍'},201);
+      const second=await fetch(`${base}/api/upload`,{method:'POST',body:form}).then(r=>r.json());
+      await api(`/albums/${album.id}/photos`,'POST',{src:second.path,caption:'第二张实拍'},201);
+      await api(`/photos/${p.id}`,'PUT',{caption:'新描述\n第二行'});
+      const backup=await read();assert.equal(backup.data.album_photos.length,2);
+      await api(`/photos/${p.id}`,'DELETE');assert.equal((await restore(backup)).status,200);
+      const photos=(await api('/library')).albums[0].photos;assert.equal(photos.length,2);assert.equal(photos[0].caption,'新描述\n第二行');
+      const invalid=structuredClone(backup);invalid.data.album_photos[0].album_id=999;assert.equal((await restore(invalid)).status,400);assert.equal((await api('/library')).albums[0].photos.length,2);
     });
   } finally {
     if (child && child.exitCode === null) { child.kill(); await exit; }

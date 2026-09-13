@@ -88,12 +88,24 @@ test("scrapbook routes, real collection data and rendering", async (t) => {
       },
     );
     await t.test("five views and legacy PWA links resolve correctly", () => {
+      assert.equal(route('?view=album&album=1').album,'1');
+      assert.equal(route('?view=album&album=1').view,'album');
       for (const view of ["home", "gallery", "collection", "wishlist", "about"])
         assert.equal(route(`?view=${view}`).view, view);
       assert.equal(route("?view=collection&tab=wishlist").view, "wishlist");
       assert.equal(route("?view=collection&tab=missing").status, "missing");
       assert.equal(route("?group=1").view, "group");
       assert.equal(route("?view=unknown").view, "home");
+    });
+    await t.test('album subpages have multiple-photo upload and owner-only text boxes',()=>{
+      const a=store.albums[0];a.photos=[{id:11,src:'/uploads/photo.png',caption:'实物照片 <script>test</script>'}];
+      store.can_edit=true;
+      const owner=page(route(`?view=album&album=${a.id}`));
+      assert.match(owner,/data-photo-files/);assert.match(owner,/multiple/);assert.match(owner,/data-saved-caption="11"/);assert.match(owner,/&lt;script&gt;/);
+      store.can_edit=false;
+      const visitor=page(route(`?view=album&album=${a.id}`));assert.doesNotMatch(visitor,/<textarea|data-photo-files/);assert.match(visitor,/实物照片/);
+      assert.doesNotMatch(hero(route('?view=home')),/更换横幅照片/);store.can_edit=true;assert.match(hero(route('?view=home')),/更换横幅照片/);store.can_edit=false;
+      delete a.photos;
     });
     await t.test(
       "URL filters are encoded, resettable and preserve the current view",

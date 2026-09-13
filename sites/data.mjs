@@ -8,6 +8,7 @@ export const COLUMNS = {
   collection: ['id','album_version_id','status','quantity','purchase_date','purchase_price','purchase_channel','purchase_currency','opened','notes','created_at','updated_at'],
   album_tracks: ['id','album_id','disc_no','track_no','title','note','source','created_at'],
   catalog_imports: ['catalog_key','imported_at','item_count'],
+  album_photos: ['id','album_id','src','caption','created_at'],
 };
 export function fail(message, status = 400) { throw Object.assign(new Error(message), { status }); }
 export const id = value => { const n = Number(value); if (!Number.isSafeInteger(n) || n < 1) fail('无效的记录 ID。'); return n; };
@@ -45,10 +46,10 @@ export function profileStatement(db, p) {
 }
 export function validateSnapshot(snapshot) {
   if (snapshot?.format !== 'kpop-collection-backup' || !snapshot.data) fail('不是有效的收藏备份。');
-  if (snapshot.schema_version !== undefined && ![1,2,3].includes(snapshot.schema_version)) fail('不支持此备份版本。');
+  if (snapshot.schema_version !== undefined && ![1,2,3,4].includes(snapshot.schema_version)) fail('不支持此备份版本。');
   const data = {};
   for (const [table, fields] of Object.entries(COLUMNS)) {
-    const optional = ['album_tracks','catalog_imports'].includes(table) && !(snapshot.schema_version >= 2);
+    const optional = table==='album_photos' ? !(snapshot.schema_version>=4) : ['album_tracks','catalog_imports'].includes(table) && !(snapshot.schema_version >= 2);
     const rows = snapshot.data[table] ?? (optional ? [] : null);
     if (!Array.isArray(rows) || rows.length > 15000) fail(`备份 ${table} 数据无效或过大。`);
     data[table] = rows.map(row => {
@@ -65,12 +66,14 @@ export function validateSnapshot(snapshot) {
       }
       if (['groups','albums'].includes(table) && !out.name || table==='album_versions' && !out.version_name || table==='album_tracks' && !out.title || table==='catalog_imports' && !out.catalog_key) fail('备份记录缺少名称。');
       if (table === 'collection' && out.status === 'owned') out.quantity = Math.max(1,out.quantity);
+      if(table==='album_photos'&&(!/^\/uploads\/[a-zA-Z0-9_.-]+$/.test(out.src)||out.caption.length>2000))fail('实物照片或描述格式无效。');
       return out;
     });
     const ids = new Set();
     for (const row of data[table]) { const key = table==='catalog_imports'?row.catalog_key:row.id; if (ids.has(key)) fail('备份存在重复 ID。'); ids.add(key); }
   }
   const groupIds = new Set(data.groups.map(r=>r.id)), albumIds = new Set(data.albums.map(r=>r.id)), versionIds = new Set(data.album_versions.map(r=>r.id));
+  if(data.album_photos.some(r=>!albumIds.has(r.album_id)))fail('实物照片所属专辑不存在。');
   if (data.albums.some(r=>!groupIds.has(r.group_id)) || data.album_versions.some(r=>!albumIds.has(r.album_id)) || data.album_tracks.some(r=>!albumIds.has(r.album_id)) || data.collection.some(r=>!versionIds.has(r.album_version_id))) fail('备份中的团体、专辑或版本关联无效。');
   data.profile = { ...EMPTY_PROFILE, ...validateProfile(snapshot.data.profile ?? (snapshot.schema_version>=3 ? null : EMPTY_PROFILE),groupIds) };
   return data;
@@ -94,8 +97,8 @@ export async function exportData(db) {
   Object.keys(COLUMNS).forEach((table,i)=>data[table]=results[i].results);
   const p = results.at(-1).results[0];
   data.profile = p ? {...p,favorite_group_ids:JSON.parse(p.favorite_group_ids)} : {...EMPTY_PROFILE};
-  return { format:'kpop-collection-backup',schema_version:3,app_version:'0.6-sites',exported_at:new Date().toISOString(),data };
+  return { format:'kpop-collection-backup',schema_version:4,app_version:'0.7-sites',exported_at:new Date().toISOString(),data };
 }
 export function assetReferences(data) {
-  return new Set([...data.groups.flatMap(r=>[r.cover,r.logo]),...data.albums.map(r=>r.cover),...data.album_versions.map(r=>r.cover),data.profile.avatar,data.profile.hero_cover].filter(v=>v?.startsWith('/uploads/')));
+  return new Set([...data.groups.flatMap(r=>[r.cover,r.logo]),...data.albums.map(r=>r.cover),...data.album_versions.map(r=>r.cover),...(data.album_photos??[]).map(r=>r.src),data.profile.avatar,data.profile.hero_cover].filter(v=>v?.startsWith('/uploads/')));
 }

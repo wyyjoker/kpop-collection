@@ -70,9 +70,11 @@ export function referenceHero() {
       <defs><clipPath id="reference-masthead-crop"><path d="M0 98H164V77H400V62H930V77H1491V354H0Z" /></clipPath></defs>
       <image href="/assets/scrapbook/reference-masthead.png" width="1491" height="1055" clip-path="url(#reference-masthead-crop)" />
     </svg>
-    ${store.profile.hero_cover ? `<div class="reference-custom-photo">${image(store.profile.hero_cover, "我的收藏主视觉")}</div>` : ""}`;
+    ${store.profile.hero_cover ? `<div class="reference-custom-photo">${image(store.profile.hero_cover, "我的收藏主视觉")}</div>` : ""}
+    ${store.can_edit ? `<button class="banner-edit soft-button" data-action="edit-banner">${icon('edit')} 更换横幅照片</button>` : ''}`;
 }
 export function hero(r) {
+  if(r.view==='album')return '';
   if (r.view === "home" || r.view === "collection") return referenceHero();
   const albums = [...store.albums]
     .sort((a, b) => (b.release_date || "").localeCompare(a.release_date || ""))

@@ -1,9 +1,11 @@
-const CACHE_NAME = "kpop-collection-shell-v0.6-sites-1";
+const CACHE_NAME = "kpop-collection-shell-v0.7-photos-2";
 const APP_SHELL = [
   "/",
   "/index.html",
   "/scrapbook.css",
-  "/app.js?v=0.6-masthead2",
+  "/app.js?v=0.7-photos",
+  "/album-photos.css?v=1",
+  "/js/photos.js",
   "/reference-masthead.css?v=2",
   "/assets/scrapbook/reference-masthead.png",
   "/js/api.js",
@@ -82,7 +84,8 @@ self.addEventListener("fetch", (event) => {
           return response;
         })
         .catch(() => cached);
-      return cached || network;
+      // Avoid mixing old page modules with a newly published application.
+      return /\.(js|css)$/.test(url.pathname) ? network : cached || network;
     }),
   );
 });

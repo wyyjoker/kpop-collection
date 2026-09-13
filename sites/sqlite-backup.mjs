@@ -1,5 +1,6 @@
 import initSqlJs from 'sql.js/dist/sql-asm.js';
 import schema from '../drizzle/0000_lovely_tyger_tiger.sql';
+import photosSchema from '../drizzle/0001_big_nitro.sql';
 import { COLUMNS, EMPTY_PROFILE, fail, validateSnapshot } from './data.mjs';
 
 let engine;
@@ -12,6 +13,7 @@ export async function sqliteExport(snapshot) {
   const SQL = await getEngine(), db = new SQL.Database();
   try {
     db.run(schema);
+    db.run(photosSchema);
     db.run('BEGIN');
     for (const [table,fields] of Object.entries(COLUMNS)) {
       const insert = db.prepare(`INSERT INTO ${table} (${fields.join(',')}) VALUES (${fields.map(()=>'?').join(',')})`);
@@ -38,7 +40,7 @@ export async function sqliteImport(bytes) {
     for (const table of Object.keys(COLUMNS)) data[table]=tables.has(table)?rows(db,table):[];
     const p=tables.has('profile')?rows(db,'profile')[0]:null;
     data.profile=p?{...p,favorite_group_ids:JSON.parse(p.favorite_group_ids)}:{...EMPTY_PROFILE};
-    const snapshot={format:'kpop-collection-backup',schema_version:3,data,assets:tables.has('backup_assets')?rows(db,'backup_assets'):[]};
+    const snapshot={format:'kpop-collection-backup',schema_version:4,data,assets:tables.has('backup_assets')?rows(db,'backup_assets'):[]};
     validateSnapshot(snapshot);
     return snapshot;
   } catch(error) { if(error.status)throw error;fail('SQLite 备份无法读取或格式不兼容。'); }

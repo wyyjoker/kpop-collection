@@ -11,7 +11,7 @@ export function registerAgentTools({store, route, navigate, url, openAlbum}) {
     inputSchema:{type:'object',properties:{view:{type:'string',enum:['home','collection','gallery','wishlist','about']}},required:['view'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},
     execute(input){if(!input||Object.keys(input).some(k=>k!=='view')||!['home','collection','gallery','wishlist','about'].includes(input.view))throw new Error('Unknown diary view');if(!store.ready)throw new Error('Collection is still loading');navigate(url({view:input.view},true));return {view:route().view};}
   },{
-    name:'open_album_details',title:'查看专辑详情',description:'Open an existing album detail dialog. Does not add a version or change ownership.',
+    name:'open_album_details',title:'查看专辑详情',description:'Navigate to an album subpage with physical photos, descriptions, versions and tracklist. Does not upload or edit data.',
     inputSchema:{type:'object',properties:{albumId:{type:'integer',minimum:1}},required:['albumId'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:true},
     execute(input){if(!input||Object.keys(input).some(k=>k!=='albumId')||!Number.isSafeInteger(input.albumId))throw new Error('Invalid album ID');const album=store.albums.find(a=>a.id===input.albumId);if(!album)throw new Error('Album not found');openAlbum(album.id);return {albumId:album.id,name:album.name,opened:true};}
   }];

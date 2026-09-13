@@ -35,3 +35,8 @@ export const profile = sqliteTable('profile', {
   hero_cover: text('hero_cover').notNull().default(''), diary: text('diary').notNull().default(''), favorite_group_ids: text('favorite_group_ids').notNull().default('[]'),
 }, t => [check('profile_singleton', sql`${t.id} = 1`)]);
 export const siteState = sqliteTable('site_state', { key: text('key').primaryKey(), value: text('value').notNull() });
+export const albumPhotos = sqliteTable('album_photos', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  album_id: integer('album_id').notNull().references(() => albums.id, { onDelete: 'cascade' }),
+  src: text('src').notNull(), caption: text('caption').notNull().default(''), created_at: created(),
+}, t => [uniqueIndex('album_photos_source_unique').on(t.album_id,t.src)]);

@@ -1,5 +1,5 @@
 import { request } from "./api.js";
-export const store = { groups: [], albums: [], profile: {}, ready: false };
+export const store = { groups: [], albums: [], profile: {}, ready: false, can_edit:false };
 export async function refresh() {
   const [library, profile] = await Promise.all([
     request("/api/library"),
@@ -48,13 +48,14 @@ export function stats() {
 }
 export function route(search = location.search) {
   const params = new URLSearchParams(search);
-  const views = ["home", "collection", "gallery", "wishlist", "about", "group"];
+  const views = ["home", "collection", "gallery", "wishlist", "about", "group", "album"];
   let view = params.get("view") || (params.has("group") ? "group" : "home");
   if (view === "collection" && params.get("tab") === "wishlist")
     view = "wishlist";
   return {
     view: views.includes(view) ? view : "home",
     group: params.get("group") || "",
+    album: params.get("album") || "",
     q: params.get("q") || "",
     year: params.get("year") || "",
     type: params.get("type") || "",

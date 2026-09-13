@@ -14,7 +14,9 @@ import {
   heading,
   albumCard,
   badge,
+  labels,
 } from "./components.js";
+import { photoSection } from './photos.js';
 
 function chips(r, choices) {
   return `<div class="chips">${choices.map(([value, label]) => `<a data-nav href="${e(url({ status: value, count: null }))}" class="${r.status === value ? "active" : ""}">${label}</a>`).join("")}</div>`;
@@ -174,5 +176,15 @@ function group(r) {
   )}${albumGrid(list, r)}</section>`;
 }
 export function page(r) {
-  return { home, gallery, collection, wishlist, about, group }[r.view](r);
+  return { home, gallery, collection, wishlist, about, group, album }[r.view](r);
+}
+function album(r) {
+  const a=store.albums.find(a=>a.id===Number(r.album));
+  if(!a)return empty('这张专辑已不存在','从图鉴选择另一张专辑吧。','<a data-nav class="pink-button" href="/?view=gallery">返回专辑图鉴</a>');
+  const discs=new Map();for(const track of a.tracks||[]){if(!discs.has(track.disc_no))discs.set(track.disc_no,[]);discs.get(track.disc_no).push(track);}
+  return `<nav class="album-breadcrumb" aria-label="当前位置"><a data-nav href="/?view=gallery">← 专辑图鉴</a><span>/</span><span>${e(a.name)}</span></nav>
+  <section class="paper album-page-intro">${image(a.cover,a.name)}<div><p class="album-eyebrow">${e(a.group_name)} · MY ALBUM DIARY</p><h1>${e(a.name)}</h1><p>${e(a.album_type)} · ${e(a.release_date)}</p><p class="preserve-lines">${e(a.notes)}</p>${store.can_edit?`<button class="soft-button" data-action="edit-album" data-id="${a.id}">${icon('edit')} 编辑专辑资料</button>`:''}</div></section>
+  ${photoSection(a)}
+  <section class="paper version-section">${heading('我的实体版本','',store.can_edit?`<button class="pink-button" data-action="add-version" data-id="${a.id}">＋ 添加版本</button>`:'')}${a.versions.length?a.versions.map(v=>`<article class="version-row">${image(v.cover||a.cover,v.version_name)}<div><b>${e(v.version_name)}</b><small>${e(v.edition_type||'实体版本')} · 数量 ${v.quantity}</small>${badge(v.status)}</div>${store.can_edit?`<div class="version-actions"><label class="sr-only" for="version-status-${v.id}">收藏状态 ${e(v.version_name)}</label><select id="version-status-${v.id}" data-version-status="${v.id}">${['missing','owned','wishlist','preordered'].map(s=>`<option value="${s}" ${s===v.status?'selected':''}>${labels[s]}</option>`).join('')}</select><button class="soft-button" data-action="edit-version" data-id="${v.id}">编辑版本</button></div>`:''}</article>`).join(''):empty('还没有录入实体版本',store.can_edit?'添加实际收藏或想购买的版本。':'主人还没有录入实体版本。')}</section>
+  ${discs.size?`<section class="paper"><details class="tracklist"><summary>♪ TRACKLIST · ${a.tracks.length} 首曲目</summary>${[...discs].map(([disc,tracks])=>`<h3>DISC ${disc}</h3><ol>${tracks.map(t=>`<li>${e(t.title)}${t.note?`<small>${e(t.note)}</small>`:''}</li>`).join('')}</ol>`).join('')}</details></section>`:''}`;
 }
