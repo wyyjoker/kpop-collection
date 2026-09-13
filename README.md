@@ -2,7 +2,7 @@
 
 个人 K-pop 实体专辑收藏管理器。
 
-当前版本：**V0.5A Alpha**
+当前版本：**V0.5A Alpha 4**
 
 ## 已实现
 
@@ -16,6 +16,25 @@
 - JSON 数据导入 / 导出
 - SQLite 数据库备份 / 恢复
 - GitHub Actions 语法检查与启动烟测
+
+## SEVENTEEN 预置专辑目录
+
+V0.5A Alpha 4 先加入一套 SEVENTEEN 实体发行目录，作为后续自动专辑资料库的第一组真实数据：
+
+- 32 个 SEVENTEEN 团体实体发行，覆盖韩国正规 / 迷你 / 特别 / 再版 / 精选，以及日本 Mini Album / EP / Single / Best Album
+- 收录时间范围：2015 `17 CARAT` 至 2025 `HAPPY BURSTDAY`
+- 每个发行包含：专辑名、发行日期、类型、地区、封面、Disc / Tracklist
+- 封面使用 SEVENTEEN Japan Official Site / Cover Art Archive 的公开图片地址，不把第三方版权图片二进制复制进仓库
+- 曲目只保存歌曲名称和 Disc / Track 序号，不保存歌词或音频文件
+- 不混入 BSS、JxW、HOSHI X WOOZI、个人 Solo 等独立小分队 / Solo 发行
+- 不收纯数字单曲；网站定位仍是实体专辑收藏
+- `npm start` / `npm run dev` 会执行一次幂等导入：已有同名同发行日专辑不会重复创建，已有用户封面 / 类型不会被覆盖
+- 需要重新同步预置目录时可运行：`npm run seed:seventeen`
+- SEVENTEEN 团体详情的每张已收录专辑下面新增可展开的 `TRACKLIST` 手账区
+
+数据文件：`public/data/seventeen-catalog.json`
+
+导入器：`scripts/seed-seventeen.js`
 
 ## V0.2 UI / UX
 
