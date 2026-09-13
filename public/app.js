@@ -1,4 +1,4 @@
-for (const href of ['/v0.1b.css', '/v0.2.css']) {
+for (const href of ['/v0.1b.css', '/v0.2.css', '/v0.3.css']) {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = href;
@@ -7,6 +7,7 @@ for (const href of ['/v0.1b.css', '/v0.2.css']) {
 
 import('/app-v0.1b.js')
   .then(() => import('/app-v0.2.js'))
+  .then(() => import('/app-v0.3.js'))
   .catch((error) => {
     console.error('Failed to load K-pop Collection client:', error);
   });
