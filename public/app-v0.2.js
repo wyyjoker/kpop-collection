@@ -123,6 +123,7 @@ function syncNavigation() {
   const inGroup = ui.groupView && !ui.groupView.classList.contains('hidden');
   document.querySelectorAll('[data-v2-nav]').forEach((button) => button.classList.remove('active'));
   document.querySelector(`[data-v2-nav="${inGroup ? 'groups' : 'home'}"]`)?.classList.add('active');
+  if (inGroup) syncStatusChips();
 }
 
 function goHomeAndMaybeScroll() {
