@@ -39,13 +39,6 @@ function v3Cover(src, title) {
   return `<div class="v3-cover-fallback">${v3Escape((title || '?').trim().slice(0, 1).toUpperCase())}</div>`;
 }
 
-function v3Date(value) {
-  if (!value) return '未记录日期';
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'short', day: 'numeric' }).format(parsed);
-}
-
 function ensureV3Ui() {
   const main = document.querySelector('main');
   if (!main || document.querySelector('#collectionCenterView')) return;
@@ -57,7 +50,7 @@ function ensureV3Ui() {
           <button id="v3Back" class="v3-back" type="button">← 返回收藏馆</button>
           <p class="eyebrow">COLLECTION CENTER</p>
           <h1>收藏中心</h1>
-          <p class="v3-lead">看看还缺什么、想买什么，以及每个团体的收藏完成度。</p>
+          <p class="v3-lead">看看还缺什么、想买什么，以及不同团体和发行年份的收藏完成度。</p>
         </div>
         <button id="v3Refresh" class="secondary-button" type="button">刷新数据</button>
       </div>
@@ -73,8 +66,8 @@ function ensureV3Ui() {
         <button class="active" type="button" data-v3-tab="wishlist">♡ Wishlist</button>
         <button type="button" data-v3-tab="missing">○ 缺失版本</button>
         <button type="button" data-v3-tab="groups">▥ 团体完成度</button>
-        <button type="button" data-v3-tab="trend">↗ 收藏趋势</button>
-        <button type="button" data-v3-tab="recent">◷ 最近入手</button>
+        <button type="button" data-v3-tab="years">▦ 年份完成度</button>
+        <button type="button" data-v3-tab="status">◉ 状态分布</button>
       </div>
 
       <div class="v3-filters">
@@ -202,27 +195,46 @@ function renderGroupRanking() {
   `).join('')}</div>`;
 }
 
-function renderTrend() {
-  const owned = filteredV3Items('owned').filter((item) => item.purchase_date);
-  const buckets = new Map();
-  for (const item of owned) {
-    const key = item.purchase_date.slice(0, 7);
-    buckets.set(key, (buckets.get(key) || 0) + Math.max(1, Number(item.quantity || 1)));
+function renderYearProgress() {
+  const items = filteredV3Items();
+  const years = new Map();
+  for (const item of items) {
+    const year = item.release_date?.slice(0, 4) || '未注明年份';
+    const entry = years.get(year) || { total: 0, owned: 0, wishlist: 0, missing: 0, preordered: 0 };
+    entry.total += 1;
+    if (entry[item.status] !== undefined) entry[item.status] += 1;
+    years.set(year, entry);
   }
-  const rows = [...buckets.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-12);
-  if (!rows.length) return '<div class="v3-empty"><strong>还没有可用的入手日期</strong><span>在版本详情里记录购买日期后，这里会显示最近 12 个月的收藏数量趋势。</span></div>';
-  const max = Math.max(...rows.map(([, count]) => count), 1);
-  return `<div class="v3-trend"><div class="v3-trend-chart">${rows.map(([month, count]) => `
-    <div class="v3-trend-col"><span>${count}</span><i style="height:${Math.max(8, Math.round((count / max) * 100))}%"></i><small>${month.slice(2).replace('-', '/')}</small></div>
-  `).join('')}</div><p class="v3-hint">按版本的购买日期统计最近 12 个月新增收藏数量，不涉及购买金额。</p></div>`;
+  const rows = [...years.entries()].sort((a, b) => {
+    if (a[0] === '未注明年份') return 1;
+    if (b[0] === '未注明年份') return -1;
+    return b[0].localeCompare(a[0]);
+  });
+  if (!rows.length) return '<div class="v3-empty"><strong>没有年份数据</strong><span>录入专辑发行日期后，这里会按发行年份统计收藏完成度。</span></div>';
+  return `<div class="v3-year-list">${rows.map(([year, stat]) => {
+    const completion = stat.total ? Math.round((stat.owned / stat.total) * 100) : 0;
+    return `<article class="v3-year-row">
+      <div><strong>${v3Escape(year)}</strong><span>${stat.owned} / ${stat.total} Versions</span></div>
+      <div class="v3-year-progress"><i style="width:${completion}%"></i></div>
+      <div class="v3-year-meta"><span>Wishlist ${stat.wishlist}</span><span>缺少 ${stat.missing}</span><b>${completion}%</b></div>
+    </article>`;
+  }).join('')}</div>`;
 }
 
-function renderRecent() {
-  const items = filteredV3Items('owned').filter((item) => item.purchase_date).sort((a, b) => b.purchase_date.localeCompare(a.purchase_date)).slice(0, 24);
-  if (!items.length) return '<div class="v3-empty"><strong>还没有最近入手记录</strong><span>给已拥有版本补充购买日期后，会自动出现在这里。</span></div>';
-  return `<div class="v3-timeline">${items.map((item) => `
-    <article><time>${v3Date(item.purchase_date)}</time><div class="v3-timeline-dot"></div><div><strong>${v3Escape(item.group_name)} · ${v3Escape(item.album_name)}</strong><span>${v3Escape(item.version_name)}${Number(item.quantity || 0) > 1 ? ` × ${item.quantity}` : ''}</span></div></article>
-  `).join('')}</div>`;
+function renderStatusDistribution() {
+  const items = filteredV3Items();
+  const total = items.length;
+  const statuses = ['owned', 'wishlist', 'preordered', 'missing'];
+  if (!total) return '<div class="v3-empty"><strong>没有收藏数据</strong><span>录入版本后这里会显示收藏状态分布。</span></div>';
+  return `<div class="v3-status-board">${statuses.map((status) => {
+    const count = items.filter((item) => item.status === status).length;
+    const percent = Math.round((count / total) * 100);
+    return `<article class="v3-status-stat ${status}">
+      <div><span>${v3Labels[status]}</span><strong>${count}</strong></div>
+      <div class="v3-status-track"><i style="width:${percent}%"></i></div>
+      <small>${percent}%</small>
+    </article>`;
+  }).join('')}</div>`;
 }
 
 function renderV3Content() {
@@ -232,8 +244,8 @@ function renderV3Content() {
   if (v3State.activeTab === 'wishlist') content.innerHTML = versionCards(filteredV3Items('wishlist'), 'Wishlist 目前是空的');
   if (v3State.activeTab === 'missing') content.innerHTML = versionCards(filteredV3Items('missing'), '没有缺失版本');
   if (v3State.activeTab === 'groups') content.innerHTML = renderGroupRanking();
-  if (v3State.activeTab === 'trend') content.innerHTML = renderTrend();
-  if (v3State.activeTab === 'recent') content.innerHTML = renderRecent();
+  if (v3State.activeTab === 'years') content.innerHTML = renderYearProgress();
+  if (v3State.activeTab === 'status') content.innerHTML = renderStatusDistribution();
 }
 
 function showV3Center() {
@@ -248,12 +260,6 @@ function showV3Center() {
   loadV3Data(true).catch((error) => v3Toast(error.message, true));
 }
 
-function hideV3Center() {
-  document.querySelector('#collectionCenterView')?.classList.add('hidden');
-  document.querySelector('#primaryAction')?.classList.remove('v3-hidden-action');
-  document.querySelector('#brandHome')?.click();
-}
-
 async function markV3Owned(versionId) {
   await v3Request(`/api/collection/${versionId}`, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -261,13 +267,12 @@ async function markV3Owned(versionId) {
   });
   v3Toast('已标记为已拥有');
   await loadV3Data(true);
-  if (typeof window.dispatchEvent === 'function') window.dispatchEvent(new Event('v3collectionchange'));
+  window.dispatchEvent(new Event('v3collectionchange'));
 }
 
 function bindV3Events() {
   document.addEventListener('click', (event) => {
     if (event.target.closest('#v3CenterEntry') || event.target.closest('[data-v3-nav="center"]')) return showV3Center();
-    if (event.target.closest('#v3Back')) return hideV3Center();
     if (event.target.closest('#v3Refresh')) return loadV3Data(true).then(() => v3Toast('收藏中心已刷新')).catch((error) => v3Toast(error.message, true));
 
     const tab = event.target.closest('[data-v3-tab]');
