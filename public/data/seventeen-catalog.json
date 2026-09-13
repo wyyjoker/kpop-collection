@@ -1,0 +1,278 @@
+{
+  "catalog_version": 1,
+  "scope": "SEVENTEEN group physical releases through 2025; excludes subunits, solos and digital-only singles",
+  "group": {
+    "name": "SEVENTEEN",
+    "korean_name": "세븐틴",
+    "company": "PLEDIS Entertainment",
+    "debut_date": "2015-05-26"
+  },
+  "sources": {
+    "official_discography": "https://www.seventeen-17.jp/posts/discography",
+    "musicbrainz_artist": "https://musicbrainz.org/artist/e04d239e-9fa8-49b3-b9b7-9e439c3cb1d1"
+  },
+  "albums": [
+    {
+      "name": "17 CARAT",
+      "release_date": "2015-05-26",
+      "album_type": "1st Mini Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//c6qz3juzkv.png",
+      "discs": [{"disc": 1, "tracks": ["Shining Diamond", "아낀다 [Adore U]", "Ah Yeah", "Jam Jam", "20"]}]
+    },
+    {
+      "name": "BOYS BE",
+      "release_date": "2015-09-11",
+      "album_type": "2nd Mini Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//2xkxdw1fsb.png",
+      "discs": [{"disc": 1, "tracks": ["표정관리 [Fronting]", "만세 [Mansae]", "어른이 되면 [When I Grow Up]", "OMG", "ROCK"]}]
+    },
+    {
+      "name": "Love & Letter",
+      "release_date": "2016-04-25",
+      "album_type": "1st Studio Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//dkrfhrglqw.png",
+      "discs": [{"disc": 1, "tracks": ["엄지척 [Chuck]", "예쁘다 [Pretty U]", "이놈의 인기 [Still Lonely]", "유행가 [Hit Song]", "Say Yes", "떠내려가 [Drift Away]", "아낀다 [Adore U] (VOCAL Team Ver.)", "만.세 [Monday To Saturday] (HIPHOP Team Ver.)", "Shining Diamond (PERFORMANCE Team Ver.)", "사랑쪽지 (LOVE LETTER)"]}]
+    },
+    {
+      "name": "Love & Letter Repackage",
+      "release_date": "2016-07-04",
+      "album_type": "Repackage Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//vdtzwwuzqf.png",
+      "discs": [{"disc": 1, "tracks": ["NO F.U.N", "아주 NICE [VERY NICE]", "힐링 [Healing]", "SIMPLE", "끝이 안보여 [Space]", "엄지척 [Chuck]", "예쁘다 [Pretty U]", "이놈의 인기 [Still Lonely]", "유행가 [Hit Song]", "Say Yes", "떠내려가 [Drift Away]", "아낀다 [Adore U] (VOCAL Team Ver.)", "만.세 [Monday To Saturday] (HIPHOP Team Ver.)", "Shining Diamond (PERFORMANCE Team Ver.)", "사랑쪽지 (LOVE LETTER)"]}]
+    },
+    {
+      "name": "17 HITS",
+      "release_date": "2016-10-21",
+      "album_type": "Compilation Album",
+      "region": "TW",
+      "cover": "https://coverartarchive.org/release/3c45b936-1627-427a-b1f4-d1863220b3ce/front-500",
+      "discs": [{"disc": 1, "tracks": ["VERY NICE", "Mansae", "Pretty U", "Adore U", "Love Letter", "SIMPLE", "Shining Diamond", "NO F.U.N", "Healing", "Space", "Fronting", "Drift Away", "Chuck", "ROCK", "Say Yes", "Adore U (VOCAL Team ver.)"]}]
+    },
+    {
+      "name": "Going Seventeen",
+      "release_date": "2016-12-05",
+      "album_type": "3rd Mini Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//ce5iscnq87.png",
+      "discs": [{"disc": 1, "tracks": ["BEAUTIFUL", "BOOMBOOM", "HIGHLIGHT", "Lean on Me", "Fast Pace", "Don’t Listen in Secret", "I Don’t Know", "Smile Flower"]}]
+    },
+    {
+      "name": "Al1",
+      "release_date": "2017-05-22",
+      "album_type": "4th Mini Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//mqo9vbnama.png",
+      "discs": [{"disc": 1, "tracks": ["울고 싶지 않아 [Don’t Wanna Cry]", "입버릇 [Habit]", "IF I", "Swimming Fool", "MY I", "Crazy in Love", "WHO (CD Only)", "Check-In (Remastering) (CD Only)"]}]
+    },
+    {
+      "name": "TEEN, AGE",
+      "release_date": "2017-11-06",
+      "album_type": "2nd Studio Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//e9jfoyr0sb.png",
+      "discs": [{"disc": 1, "tracks": ["Intro. 新世界 [Intro. New World]", "CHANGE UP", "모자를 눌러쓰고 [Without You]", "박수 [CLAP]", "날 쏘고 가라 [BRING IT]", "13월의 춤 [Lilili Yabbay]", "TRAUMA", "바람개비 [Pinwheel]", "Flower", "ROCKET", "Hello", "캠프파이어 [Campfire]", "Outro. 未完 [Outro. Incompletion]"]}]
+    },
+    {
+      "name": "DIRECTOR'S CUT",
+      "release_date": "2018-02-05",
+      "album_type": "Special Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/1573/cgqz64m4lr.png",
+      "discs": [{"disc": 1, "tracks": ["Thinkin' about you", "고맙다 [THANKS]", "지금 널 찾아가고 있어 [Run to You]", "Falling For U", "Intro. 新世界 [Intro. New World]", "CHANGE UP", "모자를 눌러쓰고 [Without You]", "박수 [CLAP]", "날 쏘고 가라 [BRING IT]", "13월의 춤 [Lilili Yabbay]", "TRAUMA", "바람개비 [Pinwheel]", "Flower", "ROCKET", "Hello", "캠프파이어 [Campfire]", "Outro. 未完 [Outro. Incompletion]"]}]
+    },
+    {
+      "name": "WE MAKE YOU",
+      "release_date": "2018-05-30",
+      "album_type": "Japan 1st Mini Album",
+      "region": "JP",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//jem0jcgg4y.png",
+      "discs": [{"disc": 1, "tracks": ["CALL CALL CALL!", "HIGHLIGHT -Japanese ver.-", "Lean On Me -Japanese ver.-", "20 -Japanese ver.-", "Love Letter -Japanese ver.-"]}]
+    },
+    {
+      "name": "YOU MAKE MY DAY",
+      "release_date": "2018-07-16",
+      "album_type": "5th Mini Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//3r71p2ajc3.png",
+      "discs": [{"disc": 1, "tracks": ["어쩌나 [Oh My!]", "Holiday", "나에게로 와 [Come to me]", "What's Good", "MOONWALKER", "우리의 새벽은 낮보다 뜨겁다 [Our dawn is hotter than day]"]}]
+    },
+    {
+      "name": "YOU MADE MY DAWN",
+      "release_date": "2019-01-21",
+      "album_type": "6th Mini Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/2616/0kxdfyz4m8.jpg",
+      "discs": [{"disc": 1, "tracks": ["Good to Me", "Home", "포옹 [Hug]", "칠리 [Chilli]", "Shhh", "숨이 차 [Getting Closer]"]}]
+    },
+    {
+      "name": "Happy Ending",
+      "release_date": "2019-05-29",
+      "album_type": "Japan 1st Single",
+      "region": "JP",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/5211/owfipwxr3s.jpg",
+      "discs": [{"disc": 1, "tracks": ["Happy Ending", "Oh My! -Japanese ver.-", "Healing -Japanese ver.-"]}]
+    },
+    {
+      "name": "An Ode",
+      "release_date": "2019-09-16",
+      "album_type": "3rd Studio Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/7556/xiqmbk4ei8.jpg",
+      "discs": [{"disc": 1, "tracks": ["HIT", "거짓말을 해 [Lie Again]", "독: Fear", "Let me hear you say", "247", "Second Life", "Network Love", "Back it up", "Lucky", "Snap Shoot", "Happy Ending -Korean ver.-"]}]
+    },
+    {
+      "name": "Fallin' Flower",
+      "release_date": "2020-04-01",
+      "album_type": "Japan 2nd Single",
+      "region": "JP",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//tsusqjtdht.png",
+      "discs": [{"disc": 1, "tracks": ["舞い落ちる花びら (Fallin' Flower)", "Good to Me -Japanese ver.-", "Smile Flower -Japanese ver.-"]}]
+    },
+    {
+      "name": "Heng:garæ",
+      "release_date": "2020-06-22",
+      "album_type": "7th Mini Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//bavkcmfg2y.jpg",
+      "discs": [{"disc": 1, "tracks": ["Fearless", "Left & Right", "좋겠다 [I Wish]", "My My", "어른 아이 [Kidult]", "같이 가요 [Together]"]}]
+    },
+    {
+      "name": "24H",
+      "release_date": "2020-09-09",
+      "album_type": "Japan 2nd Mini Album",
+      "region": "JP",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//ce6q2a8auq.jpg",
+      "discs": [{"disc": 1, "tracks": ["24H", "Pinwheel -Japanese ver.-", "247 -Japanese ver.-", "Chilli -Japanese ver.-", "Together -Japanese ver.-"]}]
+    },
+    {
+      "name": "; [Semicolon]",
+      "release_date": "2020-10-19",
+      "album_type": "Special Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/23929/arhzt4osp5.jpg",
+      "discs": [{"disc": 1, "tracks": ["HOME;RUN", "Do Re Mi", "HEY BUDDY", "Light a Flame", "AH! LOVE", "All My Love"]}]
+    },
+    {
+      "name": "ひとりじゃない",
+      "release_date": "2021-04-21",
+      "album_type": "Japan 3rd Single",
+      "region": "JP",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/32235/9iotbcjhmc.jpg",
+      "discs": [{"disc": 1, "tracks": ["ひとりじゃない", "Run to You -Japanese ver.-", "HOME;RUN -Japanese ver.-"]}]
+    },
+    {
+      "name": "Your Choice",
+      "release_date": "2021-06-18",
+      "album_type": "8th Mini Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//wxq1bj4xdh.jpg",
+      "discs": [{"disc": 1, "tracks": ["Heaven's Cloud", "Ready to love", "Anyone", "GAM3BO1", "Wave", "Same dream, same mind, same night"]}]
+    },
+    {
+      "name": "Attacca",
+      "release_date": "2021-10-22",
+      "album_type": "9th Mini Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/44010/cbxxpxuzmm.jpg",
+      "discs": [{"disc": 1, "tracks": ["소용돌이 [To you]", "Rock with you", "Crush", "PANG!", "매일 그대라서 행복하다 [Imperfect love]", "그리워하는 것까지 [I can't run away]", "2 MINUS 1 (Digital Only)"]}]
+    },
+    {
+      "name": "あいのちから",
+      "release_date": "2021-12-08",
+      "album_type": "Japan Special Single",
+      "region": "JP",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts//qhvar5pf3c.jpg",
+      "discs": [{"disc": 1, "tracks": ["あいのちから", "Home -Japanese ver.-", "Snap Shoot -Japanese ver.-"]}]
+    },
+    {
+      "name": "Face the Sun",
+      "release_date": "2022-05-27",
+      "album_type": "4th Studio Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/53027/tmiekccjii.jpg",
+      "discs": [{"disc": 1, "tracks": ["Darl+ing", "HOT", "DON QUIXOTE", "March", "Domino", "Shadow", "노래해 ['bout you]", "IF you leave me", "Ash"]}]
+    },
+    {
+      "name": "SECTOR 17",
+      "release_date": "2022-07-18",
+      "album_type": "Repackage Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/57339/1ddtu7qwyz.jpg",
+      "discs": [{"disc": 1, "tracks": ["돌고 돌아 [Circles]", "_WORLD", "Fallin’ Flower (Korean Ver.)", "CHEERS", "Darl+ing", "HOT", "DON QUIXOTE", "March", "Domino", "Shadow", "노래해 ['bout you]", "IF you leave me", "Ash"]}]
+    },
+    {
+      "name": "DREAM",
+      "release_date": "2022-11-09",
+      "album_type": "Japan 1st EP",
+      "region": "JP",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/62315/kflq2pyei4.jpg",
+      "discs": [{"disc": 1, "tracks": ["DREAM", "Rock with you -Japanese ver.-", "All My Love -Japanese ver.-", "Darl+ing -Holiday ver.-"]}]
+    },
+    {
+      "name": "FML",
+      "release_date": "2023-04-24",
+      "album_type": "10th Mini Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/69601/tkjqj0yrdu.jpg",
+      "discs": [{"disc": 1, "tracks": ["F*ck My Life", "Super", "Fire", "I Don’t Understand But I Luv U", "Dust", "April shower"]}]
+    },
+    {
+      "name": "ALWAYS YOURS",
+      "release_date": "2023-08-23",
+      "album_type": "Japan Best Album",
+      "region": "JP",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/74889/bc7808jgcb.jpg",
+      "discs": [
+        {"disc": 1, "tracks": ["今 -明日 世界が終わっても-", "Sara Sara", "CALL CALL CALL!", "Happy Ending", "舞い落ちる花びら (Fallin’ Flower)", "24H", "ひとりじゃない", "あいのちから", "DREAM"]},
+        {"disc": 2, "tracks": ["HIGHLIGHT -Japanese ver.-", "Lean On Me -Japanese ver.-", "20 -Japanese ver.-", "Love Letter -Japanese ver.-", "Oh My! -Japanese ver.-", "Healing -Japanese ver.-", "Good to Me -Japanese ver.-", "Smile Flower -Japanese ver.-", "Pinwheel -Japanese ver.-", "247 -Japanese ver.-", "Chilli -Japanese ver.-", "Together -Japanese ver.-", "Run to You -Japanese ver.-", "HOME;RUN -Japanese ver.-", "Home -Japanese ver.-", "Snap Shoot -Japanese ver.-", "Rock with you -Japanese ver.-", "All My Love -Japanese ver.-"]}
+      ]
+    },
+    {
+      "name": "SEVENTEENTH HEAVEN",
+      "release_date": "2023-10-23",
+      "album_type": "11th Mini Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/77400/wpf5mnfj8c.jpg",
+      "discs": [{"disc": 1, "tracks": ["SOS (Prod. Marshmello)", "God of Music", "Diamond Days", "Back 2 Back", "Monster", "Yawn", "Headliner", "God of Music (Inst.)"]}]
+    },
+    {
+      "name": "17 IS RIGHT HERE",
+      "release_date": "2024-04-29",
+      "album_type": "Best Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/85268/q17bwceyoj.jpg",
+      "discs": [
+        {"disc": 1, "tracks": ["MAESTRO", "LALALI", "Spell", "Cheers to youth", "CALL CALL CALL! (Korean Ver.)", "Happy Ending (Korean Ver.)", "Fallin' Flower (Korean Ver.)", "24H (Korean Ver.)", "Not Alone (Korean Ver.)", "Power of Love (Korean Ver.)", "DREAM (Korean Ver.)", "Ima -Even if the world ends tomorrow- (Korean Ver.)"]},
+        {"disc": 2, "tracks": ["Adore U", "Mansae", "Pretty U", "VERY NICE", "BOOMBOOM", "Don't Wanna Cry", "CLAP", "THANKS", "Oh My!", "Home", "Fear", "Left & Right", "HOME;RUN", "Ready to love", "Rock with you", "HOT", "_WORLD", "F*ck My Life", "Super", "God of Music"]}
+      ]
+    },
+    {
+      "name": "SPILL THE FEELS",
+      "release_date": "2024-10-14",
+      "album_type": "12th Mini Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/90690/jcehpbc4mc.jpg",
+      "discs": [{"disc": 1, "tracks": ["Eyes on you", "LOVE, MONEY, FAME (feat. DJ Khaled)", "1 TO 13", "Candy", "Rain", "Water"]}]
+    },
+    {
+      "name": "消費期限",
+      "release_date": "2024-11-27",
+      "album_type": "Japan 4th Single",
+      "region": "JP",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/93189/ifkwnqwgbi.jpg",
+      "discs": [{"disc": 1, "tracks": ["消費期限", "Circles -Japanese ver.-", "MAESTRO -Japanese ver.-"]}]
+    },
+    {
+      "name": "HAPPY BURSTDAY",
+      "release_date": "2025-05-26",
+      "album_type": "5th Studio Album",
+      "region": "KR",
+      "cover": "https://s3-ap-northeast-1.amazonaws.com/pf-web/fanclubs/15/posts/99639/7wsvdqumet.jpg",
+      "discs": [{"disc": 1, "tracks": ["HBD", "THUNDER", "Bad Influence (Prod. by Pharrell Williams)", "Skyfall (THE 8 Solo)", "Fortunate Change (JOSHUA Solo)", "99.9% (WONWOO Solo)", "Raindrops (SEUNGKWAN Solo)", "Damage (HOSHI Solo) (feat. Timbaland)", "Shake It Off (MINGYU Solo)", "Happy Virus (DK Solo)", "Destiny (WOOZI Solo)", "Shining Star (Vernon Solo)", "Gemini (JUN Solo)", "Trigger (DINO Solo)", "Coincidence (JEONGHAN Solo)", "Jungle (S.COUPS Solo)"]}]
+    }
+  ]
+}

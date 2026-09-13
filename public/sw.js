@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kpop-collection-shell-v0.5.0-alpha.3';
+const CACHE_NAME = 'kpop-collection-shell-v0.5.0-alpha.4';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -10,6 +10,7 @@ const APP_SHELL = [
   '/v0.5a.css',
   '/v0.5a-polish.css',
   '/v0.5a-hero.css',
+  '/v0.5a-seventeen.css',
   '/app.js',
   '/app-v0.1b.js',
   '/app-v0.2.js',
@@ -19,6 +20,8 @@ const APP_SHELL = [
   '/app-v0.5a.js',
   '/app-v0.5a-polish.js',
   '/app-v0.5a-hero.js',
+  '/app-v0.5a-seventeen.js',
+  '/data/seventeen-catalog.json',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
