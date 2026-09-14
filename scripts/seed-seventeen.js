@@ -7,17 +7,23 @@ const sqlite3 = require('sqlite3').verbose();
 const ROOT = path.resolve(__dirname, '..');
 const DB_PATH = path.resolve(process.env.DB_PATH || path.join(ROOT, 'data', 'kpop-collection.db'));
 const CATALOG_PATH = path.join(ROOT, 'public', 'data', 'seventeen-catalog.json');
+const VERSION_CATALOG_PATH = path.join(ROOT, 'public', 'data', 'seventeen-versions.json');
 const FORCE = process.argv.includes('--force');
-const MARKER_PREFIX = 'seventeen-catalog-v';
+const CATALOG_MARKER_PREFIX = 'seventeen-catalog-v';
+const VERSION_MARKER_PREFIX = 'seventeen-versions-v';
 
-if (!fs.existsSync(CATALOG_PATH)) {
-  console.error(`SEVENTEEN catalog not found: ${CATALOG_PATH}`);
-  process.exit(1);
+for (const required of [CATALOG_PATH, VERSION_CATALOG_PATH]) {
+  if (!fs.existsSync(required)) {
+    console.error(`SEVENTEEN catalog not found: ${required}`);
+    process.exit(1);
+  }
 }
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
-const marker = `${MARKER_PREFIX}${catalog.catalog_version}`;
+const versionCatalog = JSON.parse(fs.readFileSync(VERSION_CATALOG_PATH, 'utf8'));
+const catalogMarker = `${CATALOG_MARKER_PREFIX}${catalog.catalog_version}`;
+const versionMarker = `${VERSION_MARKER_PREFIX}${versionCatalog.catalog_version}`;
 const db = new sqlite3.Database(DB_PATH);
 
 function run(sql, params = []) {
@@ -69,6 +75,36 @@ async function ensureSchema() {
     )
   `);
   await run(`
+    CREATE TABLE IF NOT EXISTS album_versions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      album_id INTEGER NOT NULL,
+      version_name TEXT NOT NULL,
+      cover TEXT DEFAULT '',
+      barcode TEXT DEFAULT '',
+      edition_type TEXT DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE,
+      UNIQUE(album_id, version_name)
+    )
+  `);
+  await run(`
+    CREATE TABLE IF NOT EXISTS collection (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      album_version_id INTEGER NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'missing' CHECK(status IN ('owned', 'wishlist', 'missing', 'preordered')),
+      quantity INTEGER NOT NULL DEFAULT 0 CHECK(quantity >= 0),
+      purchase_date TEXT DEFAULT '',
+      purchase_price REAL,
+      purchase_channel TEXT DEFAULT '',
+      purchase_currency TEXT DEFAULT 'CNY',
+      opened INTEGER NOT NULL DEFAULT 0 CHECK(opened IN (0, 1)),
+      notes TEXT DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (album_version_id) REFERENCES album_versions(id) ON DELETE CASCADE
+    )
+  `);
+  await run(`
     CREATE TABLE IF NOT EXISTS album_tracks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       album_id INTEGER NOT NULL,
@@ -83,6 +119,8 @@ async function ensureSchema() {
     )
   `);
   await run('CREATE INDEX IF NOT EXISTS idx_album_tracks_album_id ON album_tracks(album_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_versions_album_id ON album_versions(album_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_collection_status ON collection(status)');
   await run(`
     CREATE TABLE IF NOT EXISTS catalog_imports (
       catalog_key TEXT PRIMARY KEY,
@@ -151,16 +189,93 @@ async function replaceTracks(albumId, album) {
           title = excluded.title,
           note = CASE WHEN TRIM(COALESCE(album_tracks.note, '')) = '' THEN excluded.note ELSE album_tracks.note END,
           source = excluded.source
-      `, [albumId, discNo, index + 1, title, note, marker]);
+      `, [albumId, discNo, index + 1, title, note, catalogMarker]);
     }
   }
 }
 
+function decodeVersion(raw) {
+  if (typeof raw === 'string') return { version_name: raw, edition_type: '', barcode: '', cover: '' };
+  if (Array.isArray(raw)) {
+    return {
+      version_name: raw[0] || '',
+      edition_type: raw[1] || '',
+      barcode: raw[2] || '',
+      note: raw[3] || '',
+      cover: '',
+    };
+  }
+  return {
+    version_name: raw?.version_name || '',
+    edition_type: raw?.edition_type || '',
+    barcode: raw?.barcode || '',
+    note: raw?.note || '',
+    cover: raw?.cover || '',
+  };
+}
+
+async function upsertVersion(albumId, rawVersion) {
+  const version = decodeVersion(rawVersion);
+  if (!version.version_name) throw new Error(`SEVENTEEN version is missing a name for album ${albumId}`);
+  let row = await get(
+    'SELECT * FROM album_versions WHERE album_id = ? AND version_name = ? COLLATE NOCASE',
+    [albumId, version.version_name],
+  );
+  if (!row) {
+    const result = await run(`
+      INSERT INTO album_versions (album_id, version_name, cover, barcode, edition_type)
+      VALUES (?, ?, ?, ?, ?)
+    `, [albumId, version.version_name, version.cover, version.barcode, version.edition_type]);
+    row = await get('SELECT * FROM album_versions WHERE id = ?', [result.id]);
+  } else {
+    // Catalog metadata only fills blanks. User-edited artwork/barcodes/types always win.
+    await run(`
+      UPDATE album_versions SET
+        cover = CASE WHEN TRIM(COALESCE(cover, '')) = '' THEN ? ELSE cover END,
+        barcode = CASE WHEN TRIM(COALESCE(barcode, '')) = '' THEN ? ELSE barcode END,
+        edition_type = CASE WHEN TRIM(COALESCE(edition_type, '')) = '' THEN ? ELSE edition_type END
+      WHERE id = ?
+    `, [version.cover, version.barcode, version.edition_type, row.id]);
+  }
+  await run(`
+    INSERT OR IGNORE INTO collection (album_version_id, status, quantity)
+    VALUES (?, 'missing', 0)
+  `, [row.id]);
+  return row.id;
+}
+
+async function syncVersions(groupId) {
+  let count = 0;
+  for (const [albumName, release] of Object.entries(versionCatalog.releases || {})) {
+    const album = await get(
+      'SELECT id FROM albums WHERE group_id = ? AND name = ? COLLATE NOCASE ORDER BY release_date DESC LIMIT 1',
+      [groupId, albumName],
+    );
+    if (!album) throw new Error(`SEVENTEEN version catalog references missing album: ${albumName}`);
+    for (const rawVersion of release.versions || []) {
+      await upsertVersion(album.id, rawVersion);
+      count += 1;
+    }
+  }
+  return count;
+}
+
+async function markImport(marker, count) {
+  await run(`
+    INSERT INTO catalog_imports (catalog_key, item_count)
+    VALUES (?, ?)
+    ON CONFLICT(catalog_key) DO UPDATE SET imported_at = CURRENT_TIMESTAMP, item_count = excluded.item_count
+  `, [marker, count]);
+}
+
 async function main() {
   await ensureSchema();
-  const imported = await get('SELECT catalog_key FROM catalog_imports WHERE catalog_key = ?', [marker]);
-  if (imported && !FORCE) {
-    console.log(`SEVENTEEN catalog ${marker} already imported; skipping.`);
+  const [catalogImported, versionsImported] = await Promise.all([
+    get('SELECT catalog_key FROM catalog_imports WHERE catalog_key = ?', [catalogMarker]),
+    get('SELECT catalog_key FROM catalog_imports WHERE catalog_key = ?', [versionMarker]),
+  ]);
+  if (catalogImported && versionsImported && !FORCE) {
+    console.log(`SEVENTEEN catalog ${catalogMarker} / ${versionMarker} already imported; skipping.`);
     return;
   }
 
@@ -168,18 +283,22 @@ async function main() {
   try {
     const groupId = await upsertGroup();
     let trackCount = 0;
+    const syncAlbumCatalog = FORCE || !catalogImported;
     for (const album of catalog.albums) {
       const albumId = await upsertAlbum(groupId, album);
-      await replaceTracks(albumId, album);
+      if (syncAlbumCatalog) await replaceTracks(albumId, album);
       trackCount += (album.discs || []).reduce((sum, disc) => sum + (disc.tracks || []).length, 0);
     }
-    await run(`
-      INSERT INTO catalog_imports (catalog_key, item_count)
-      VALUES (?, ?)
-      ON CONFLICT(catalog_key) DO UPDATE SET imported_at = CURRENT_TIMESTAMP, item_count = excluded.item_count
-    `, [marker, catalog.albums.length]);
+    if (syncAlbumCatalog) await markImport(catalogMarker, catalog.albums.length);
+
+    let versionCount = 0;
+    if (FORCE || !versionsImported) {
+      versionCount = await syncVersions(groupId);
+      await markImport(versionMarker, versionCount);
+    }
+
     await run('COMMIT');
-    console.log(`Imported SEVENTEEN catalog: ${catalog.albums.length} releases, ${trackCount} tracks -> ${DB_PATH}`);
+    console.log(`Imported SEVENTEEN catalog: ${catalog.albums.length} releases, ${trackCount} tracks, ${versionCount || 'existing'} physical versions -> ${DB_PATH}`);
   } catch (error) {
     await run('ROLLBACK').catch(() => {});
     throw error;
