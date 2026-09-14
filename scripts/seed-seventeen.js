@@ -4,11 +4,12 @@ const path = require('path');
 const { importCatalog } = require('./import-catalog');
 
 const ROOT = path.resolve(__dirname, '..');
+const includeVersions = process.argv.includes('--with-versions') || process.env.SEVENTEEN_INCLUDE_VERSIONS === '1';
 
 importCatalog({
   slug: 'seventeen',
   catalogPath: path.join(ROOT, 'public', 'data', 'seventeen-catalog.json'),
-  versionsPath: path.join(ROOT, 'public', 'data', 'seventeen-versions.json'),
+  versionsPath: includeVersions ? path.join(ROOT, 'public', 'data', 'seventeen-versions.json') : null,
   force: process.argv.includes('--force'),
 })
   .then((result) => {
@@ -16,7 +17,8 @@ importCatalog({
       console.log(`SEVENTEEN catalog already imported; skipping -> ${result.dbPath}`);
       return;
     }
-    console.log(`Imported SEVENTEEN catalog: ${result.releases} releases, ${result.tracks} tracks, ${result.versions || 'existing'} physical versions -> ${result.dbPath}`);
+    const versions = includeVersions ? `, ${result.versions || 'existing'} physical versions` : '';
+    console.log(`Imported SEVENTEEN catalog: ${result.releases} releases, ${result.tracks} tracks${versions} -> ${result.dbPath}`);
   })
   .catch((error) => {
     console.error('Failed to seed SEVENTEEN catalog:', error);
