@@ -1,13 +1,15 @@
-const CACHE_NAME = "kpop-collection-shell-v0.5b1";
+const CACHE_NAME = "kpop-collection-shell-v0.5b2";
 const APP_SHELL = [
   "/",
   "/index.html",
   "/scrapbook.css",
-  "/app.js?v=0.5b1",
+  "/version-details.css?v=1",
+  "/app.js?v=0.5b2",
   "/album-photos.css?v=1",
   "/js/photos.js",
   "/js/audio.js",
   "/js/player.js",
+  "/js/version-details.js?v=1",
   "/reference-masthead.css?v=2",
   "/assets/scrapbook/reference-masthead.png",
   "/js/api.js",

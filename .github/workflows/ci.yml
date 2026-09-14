@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feature/v0.1b, feature/v0.2, feature/v0.3, feature/v0.4, feature/v0.5a, feature/v0.5a-polish, feature/v0.5a-hero-collage, feature/seventeen-catalog, feature/v0.5b-seventeen-versions]
+    branches: [main, feature/v0.1b, feature/v0.2, feature/v0.3, feature/v0.4, feature/v0.5a, feature/v0.5a-polish, feature/v0.5a-hero-collage, feature/seventeen-catalog, feature/v0.5b-seventeen-versions, feature/v0.5b-multi-group-catalog]
   pull_request:
     branches: [main]
 
@@ -40,6 +40,7 @@ jobs:
           node - <<'NODE'
           const catalog = require('./public/data/seventeen-catalog.json');
           const versions = require('./public/data/seventeen-versions.json');
+          const registry = require('./public/data/catalog-registry.json');
           const tracks = catalog.albums.reduce((sum, album) => sum + (album.discs || []).reduce((discSum, disc) => discSum + (disc.tracks || []).length, 0), 0);
           const versionCount = Object.values(versions.releases || {}).reduce((sum, release) => sum + (release.versions || []).length, 0);
           if (catalog.group.name !== 'SEVENTEEN') throw new Error('SEVENTEEN group metadata missing');
@@ -48,18 +49,24 @@ jobs:
           if (Object.keys(versions.releases || {}).length !== catalog.albums.length) throw new Error('Every bundled SEVENTEEN release must have a physical-version catalog entry');
           if (versionCount < 100) throw new Error(`Physical-version catalog unexpectedly small: ${versionCount}`);
           if (catalog.albums.some((album) => !album.cover || !album.release_date || !(album.discs || []).length)) throw new Error('A release is missing cover/date/tracklist data');
-          console.log(`Validated ${catalog.albums.length} SEVENTEEN releases / ${tracks} tracks / ${versionCount} physical versions`);
+          const expected = ['txt','exo','illit','nmixx','enhypen','red-velvet','hearts2hearts','twice','le-sserafim','aespa','rescene','itzy','blackpink','kiiikiii'];
+          const slugs = new Set((registry.artists || []).map((artist) => artist.slug));
+          for (const slug of expected) if (!slugs.has(slug)) throw new Error(`Catalog registry missing ${slug}`);
+          for (const artist of registry.artists || []) if (!/^[0-9a-f-]{36}$/.test(artist.musicbrainz_artist_id || '')) throw new Error(`Invalid MusicBrainz artist id for ${artist.name}`);
+          console.log(`Validated ${catalog.albums.length} SEVENTEEN releases / ${tracks} tracks / ${versionCount} physical versions / ${registry.artists.length} online catalog artists`);
           NODE
           test -f public/icons/icon-192.png
           test -f public/icons/icon-512.png
           test -f public/icons/icon-maskable-512.png
           test -f public/icons/apple-touch-icon.png
           test -f public/scrapbook.css
+          test -f public/version-details.css
           test -f public/reference-masthead.css
           test -f public/assets/scrapbook/reference-masthead.png
           test -f public/js/store.js
           test -f public/js/pages.js
           test -f public/js/dialogs.js
+          test -f public/js/version-details.js
           test -f public/assets/scrapbook/collection-corner.png
           test -f public/app-v0.5a.js
           test -f public/app-v0.5a-polish.js
@@ -71,8 +78,10 @@ jobs:
           test -f public/v0.5a-seventeen.css
           test -f scripts/import-catalog.js
           test -f scripts/seed-seventeen.js
+          test -f scripts/sync-curated-catalogs.js
           test -f public/data/seventeen-catalog.json
           test -f public/data/seventeen-versions.json
+          test -f public/data/catalog-registry.json
           test -f public/assets/scrapbook/paper-grid.svg
           test -f public/assets/scrapbook/doodle-heart.svg
           test -f public/assets/scrapbook/doodle-star.svg
@@ -125,13 +134,16 @@ jobs:
               curl -fsS http://127.0.0.1:3000/manifest.webmanifest >/dev/null
               curl -fsS http://127.0.0.1:3000/sw.js >/dev/null
               curl -fsS http://127.0.0.1:3000/scrapbook.css >/dev/null
+              curl -fsS http://127.0.0.1:3000/version-details.css >/dev/null
               curl -fsS http://127.0.0.1:3000/js/pages.js >/dev/null
+              curl -fsS http://127.0.0.1:3000/js/version-details.js >/dev/null
               curl -fsS http://127.0.0.1:3000/api/library >/dev/null
               curl -fsS http://127.0.0.1:3000/api/profile >/dev/null
               curl -fsS http://127.0.0.1:3000/app-v0.5a-seventeen.js >/dev/null
               curl -fsS http://127.0.0.1:3000/v0.5a-seventeen.css >/dev/null
               curl -fsS http://127.0.0.1:3000/data/seventeen-catalog.json >/dev/null
               curl -fsS http://127.0.0.1:3000/data/seventeen-versions.json >/dev/null
+              curl -fsS http://127.0.0.1:3000/data/catalog-registry.json >/dev/null
               curl -fsS http://127.0.0.1:3000/api/groups | grep -q 'SEVENTEEN'
               exit 0
             fi

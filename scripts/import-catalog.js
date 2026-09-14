@@ -31,6 +31,14 @@ function decodeVersion(raw) {
   };
 }
 
+function versionReleaseEntries(versionCatalog) {
+  const releases = versionCatalog?.releases || {};
+  if (Array.isArray(releases)) {
+    return releases.map((release, index) => [release?.album_name || `release-${index + 1}`, release || {}]);
+  }
+  return Object.entries(releases).map(([key, release]) => [release?.album_name || key, release || {}]);
+}
+
 async function importCatalog(options) {
   const slug = options.slug;
   const catalogPath = path.resolve(options.catalogPath);
@@ -116,12 +124,20 @@ async function importCatalog(options) {
     return row.id;
   }
 
+  async function findVersionAlbum(groupId, albumName, release) {
+    if (release.release_date) {
+      const exact = await get('SELECT id FROM albums WHERE group_id=? AND name=? COLLATE NOCASE AND release_date=? LIMIT 1', [groupId,albumName,release.release_date]);
+      if (exact) return exact;
+    }
+    return get('SELECT id FROM albums WHERE group_id=? AND name=? COLLATE NOCASE ORDER BY release_date DESC LIMIT 1', [groupId,albumName]);
+  }
+
   async function syncVersions(groupId) {
     if (!versionCatalog) return 0;
     let count = 0;
-    for (const [albumName, release] of Object.entries(versionCatalog.releases || {})) {
-      const album = await get('SELECT id FROM albums WHERE group_id=? AND name=? COLLATE NOCASE ORDER BY release_date DESC LIMIT 1', [groupId,albumName]);
-      if (!album) throw new Error(`Version catalog references missing album: ${albumName}`);
+    for (const [albumName, release] of versionReleaseEntries(versionCatalog)) {
+      const album = await findVersionAlbum(groupId, albumName, release);
+      if (!album) throw new Error(`Version catalog references missing album: ${albumName}${release.release_date ? ` (${release.release_date})` : ''}`);
       for (const rawVersion of release.versions || []) { await upsertVersion(album.id, rawVersion); count += 1; }
     }
     return count;
@@ -185,4 +201,4 @@ if (require.main === module) {
   }).then((result) => console.log(JSON.stringify(result))).catch((error) => { console.error(error); process.exitCode = 1; });
 }
 
-module.exports = { importCatalog, decodeVersion };
+module.exports = { importCatalog, decodeVersion, versionReleaseEntries };
