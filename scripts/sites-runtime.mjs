@@ -1,4 +1,4 @@
-import { Miniflare } from 'miniflare';
+import { Miniflare, Request as MiniflareRequest } from 'miniflare';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -50,12 +50,11 @@ async function assetBinding(request) {
 
 function normalizeDispatch(mf) {
   const dispatch = mf.dispatchFetch.bind(mf);
-  // Node's FormData needs to be turned into a standards Request before it crosses
-  // Miniflare's HTTP bridge. This preserves the generated multipart boundary exactly
-  // like a browser upload; passing FormData directly in RequestInit can lose it.
+  // Build multipart requests with Miniflare's Request implementation so its
+  // HTTP bridge keeps the generated boundary and Content-Type intact.
   mf.dispatchFetch = (input, init) => {
     if (init?.body instanceof FormData) {
-      return dispatch(new Request(input, init));
+      return dispatch(new MiniflareRequest(input, init));
     }
     return dispatch(input, init);
   };
