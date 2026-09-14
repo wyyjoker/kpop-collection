@@ -1,0 +1,26 @@
+{
+  "registry_version": 1,
+  "source": "MusicBrainz + Cover Art Archive; official artist/store pages are used for manual cross-checks when curating overrides.",
+  "policy": {
+    "scope": "Official physical Album / EP / Single releases. Digital-only releases, live albums, remixes and soundtracks are excluded by default.",
+    "covers": "Use release-specific Cover Art Archive front artwork when available; otherwise fall back to the release-group/album cover.",
+    "barcodes": "Only numeric MusicBrainz barcodes are imported. Missing or unverified barcodes stay blank.",
+    "collection_status": "Every imported physical version starts as missing with quantity 0; existing user collection state is preserved."
+  },
+  "artists": [
+    {"slug":"txt","name":"TOMORROW X TOGETHER","korean_name":"투모로우바이투게더","company":"BIGHIT MUSIC","debut_date":"2019-03-04","musicbrainz_artist_id":"9d027d72-790e-40ec-bbb7-61aa613457de"},
+    {"slug":"exo","name":"EXO","korean_name":"엑소","company":"SM Entertainment","debut_date":"2012-04-08","musicbrainz_artist_id":"b3785a55-2cf6-497d-b8e3-cfa21a36f997"},
+    {"slug":"illit","name":"ILLIT","korean_name":"아일릿","company":"BELIFT LAB","debut_date":"2024-03-25","musicbrainz_artist_id":"6b128dd7-e998-4edb-a4f5-400fef190445"},
+    {"slug":"nmixx","name":"NMIXX","korean_name":"엔믹스","company":"JYP Entertainment","debut_date":"2022-02-22","musicbrainz_artist_id":"2d623e82-73e2-4179-9c44-e963980f2d58"},
+    {"slug":"enhypen","name":"ENHYPEN","korean_name":"엔하이픈","company":"BELIFT LAB","debut_date":"2020-11-30","musicbrainz_artist_id":"95663592-1447-4579-90f7-c94733476667"},
+    {"slug":"red-velvet","name":"Red Velvet","korean_name":"레드벨벳","company":"SM Entertainment","debut_date":"2014-08-01","musicbrainz_artist_id":"4f0cb3b7-6c06-4317-ae35-ddf3106a17ee"},
+    {"slug":"hearts2hearts","name":"Hearts2Hearts","korean_name":"하츠투하츠","company":"SM Entertainment","debut_date":"2025-02-24","musicbrainz_artist_id":"066080a4-84c7-46c6-91d3-dc10d572749b"},
+    {"slug":"twice","name":"TWICE","korean_name":"트와이스","company":"JYP Entertainment","debut_date":"2015-10-20","musicbrainz_artist_id":"8da127cc-c432-418f-b356-ef36210d82ac"},
+    {"slug":"le-sserafim","name":"LE SSERAFIM","korean_name":"르세라핌","company":"SOURCE MUSIC","debut_date":"2022-05-02","musicbrainz_artist_id":"1ee37742-1e3d-4e61-84d2-bc85f4c1459a"},
+    {"slug":"aespa","name":"aespa","korean_name":"에스파","company":"SM Entertainment","debut_date":"2020-11-17","musicbrainz_artist_id":"b51c672b-85e0-48fe-8648-470a2422229f"},
+    {"slug":"rescene","name":"RESCENE","korean_name":"리센느","company":"THE MUZE Entertainment","debut_date":"2024-03-26","musicbrainz_artist_id":"a54fd8e2-d319-44a6-aa60-21adf17751bf"},
+    {"slug":"itzy","name":"ITZY","korean_name":"있지","company":"JYP Entertainment","debut_date":"2019-02-12","musicbrainz_artist_id":"bce172fc-51bb-43f7-9a25-b406a0a581d5"},
+    {"slug":"blackpink","name":"BLACKPINK","korean_name":"블랙핑크","company":"YG Entertainment","debut_date":"2016-08-08","musicbrainz_artist_id":"48646387-1664-4c9a-9139-9bfd091b823c"},
+    {"slug":"kiiikiii","name":"KiiiKiii","korean_name":"키키","company":"STARSHIP Entertainment","debut_date":"2025-03-24","musicbrainz_artist_id":"bdbc7927-6ff5-4a64-a2dd-9756323008e1"}
+  ]
+}
