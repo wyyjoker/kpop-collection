@@ -1,0 +1,96 @@
+.version-section .version-row {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  margin: 10px 0;
+  padding: 14px;
+  border: 1px solid #e7e0ec;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fffefa 0%, #fff8fc 58%, #f8fbff 100%);
+  box-shadow: 0 6px 18px #5d4b6810;
+}
+.version-section .version-row:last-child { border-bottom: 1px solid #e7e0ec; }
+.version-section .version-row > .picture.version-cover-art {
+  width: 108px;
+  height: 108px;
+  flex: none;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f3eef7;
+  box-shadow: 0 4px 14px #49395718;
+}
+.version-section .version-row > .picture.version-cover-art[data-specific-cover="1"] {
+  outline: 3px solid #f7cae4;
+  outline-offset: 2px;
+}
+.version-section .version-row > .picture img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.version-section .version-row > div:first-of-type > b {
+  margin-bottom: 8px;
+  font-size: 15px;
+  line-height: 1.35;
+}
+.version-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 8px 0 9px;
+}
+.version-detail-chip {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  padding: 6px 9px;
+  border: 1px solid #ece5f1;
+  border-radius: 9px;
+  background: #ffffffc7;
+}
+.version-detail-chip small {
+  flex: 0 0 auto;
+  color: #91879b;
+  font-size: 9px;
+  letter-spacing: .02em;
+}
+.version-detail-chip b {
+  min-width: 0;
+  margin: 0 !important;
+  overflow-wrap: anywhere;
+  color: #4b4358;
+  font-size: 10px !important;
+  font-family: var(--body);
+}
+.version-detail-chip.has-barcode { background: #f4f0ff; border-color: #ddd2fa; }
+.version-detail-chip.has-cover { background: #eefaf5; border-color: #d0ebdf; }
+.version-detail-chip.muted { opacity: .76; }
+.version-section .version-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  max-width: 190px;
+}
+.version-section .version-actions select {
+  width: 100%;
+}
+@media (max-width: 760px) {
+  .version-section .version-row {
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 11px;
+    padding: 11px;
+  }
+  .version-section .version-row > .picture.version-cover-art {
+    width: 78px;
+    height: 78px;
+  }
+  .version-detail-grid { grid-template-columns: 1fr; }
+  .version-section .version-actions {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
