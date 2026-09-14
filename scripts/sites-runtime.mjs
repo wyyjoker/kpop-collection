@@ -48,6 +48,20 @@ async function assetBinding(request) {
   }
 }
 
+function normalizeDispatch(mf) {
+  const dispatch = mf.dispatchFetch.bind(mf);
+  // Node's FormData needs to be turned into a standards Request before it crosses
+  // Miniflare's HTTP bridge. This preserves the generated multipart boundary exactly
+  // like a browser upload; passing FormData directly in RequestInit can lose it.
+  mf.dispatchFetch = (input, init) => {
+    if (init?.body instanceof FormData) {
+      return dispatch(new Request(input, init));
+    }
+    return dispatch(input, init);
+  };
+  return mf;
+}
+
 export async function createRuntime({ port = 0, persist = false } = {}) {
   if (process.env.SITES_TEST_RUNTIME === 'node') {
     console.warn('Using Node/SQLite compatibility harness; not native Workers validation. Images are temporary.');
@@ -87,7 +101,7 @@ export async function createRuntime({ port = 0, persist = false } = {}) {
         db.prepare('INSERT INTO local_migrations VALUES (?)').bind(name),
       ]);
     }
-    return mf;
+    return normalizeDispatch(mf);
   } catch (error) {
     await mf.dispose();
     throw error;
