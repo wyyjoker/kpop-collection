@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feature/v0.1b, feature/v0.2, feature/v0.3, feature/v0.4, feature/v0.5a, feature/v0.5a-polish, feature/v0.5a-hero-collage, feature/seventeen-catalog, feature/v0.5b-seventeen-versions, feature/v0.5b-multi-group-catalog]
+    branches: [main, feature/v0.1b, feature/v0.2, feature/v0.3, feature/v0.4, feature/v0.5a, feature/v0.5a-polish, feature/v0.5a-hero-collage, feature/seventeen-catalog, feature/v0.5b-seventeen-versions, feature/v0.5b-multi-group-catalog, feature/v0.5b-sites-catalog]
   pull_request:
     branches: [main]
 
@@ -61,12 +61,14 @@ jobs:
           test -f public/icons/apple-touch-icon.png
           test -f public/scrapbook.css
           test -f public/version-details.css
+          test -f public/catalog-sync.css
           test -f public/reference-masthead.css
           test -f public/assets/scrapbook/reference-masthead.png
           test -f public/js/store.js
           test -f public/js/pages.js
           test -f public/js/dialogs.js
           test -f public/js/version-details.js
+          test -f public/js/catalog-sync-ui.js
           test -f public/assets/scrapbook/collection-corner.png
           test -f public/app-v0.5a.js
           test -f public/app-v0.5a-polish.js
@@ -79,6 +81,8 @@ jobs:
           test -f scripts/import-catalog.js
           test -f scripts/seed-seventeen.js
           test -f scripts/sync-curated-catalogs.js
+          test -f sites/catalog-sync.mjs
+          test -f sites/worker-entry.mjs
           test -f public/data/seventeen-catalog.json
           test -f public/data/seventeen-versions.json
           test -f public/data/catalog-registry.json
@@ -135,8 +139,10 @@ jobs:
               curl -fsS http://127.0.0.1:3000/sw.js >/dev/null
               curl -fsS http://127.0.0.1:3000/scrapbook.css >/dev/null
               curl -fsS http://127.0.0.1:3000/version-details.css >/dev/null
+              curl -fsS http://127.0.0.1:3000/catalog-sync.css >/dev/null
               curl -fsS http://127.0.0.1:3000/js/pages.js >/dev/null
               curl -fsS http://127.0.0.1:3000/js/version-details.js >/dev/null
+              curl -fsS http://127.0.0.1:3000/js/catalog-sync-ui.js >/dev/null
               curl -fsS http://127.0.0.1:3000/api/library >/dev/null
               curl -fsS http://127.0.0.1:3000/api/profile >/dev/null
               curl -fsS http://127.0.0.1:3000/app-v0.5a-seventeen.js >/dev/null
