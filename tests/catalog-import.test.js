@@ -53,3 +53,41 @@ test('generic catalog importer seeds SEVENTEEN physical versions safely and idem
   assert.equal(third.skipped, true);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test('generic importer attaches same-title physical versions to the exact release date', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kpop-duplicate-title-'));
+  const dbPath = path.join(dir, 'catalog.db');
+  const catalogFile = path.join(dir, 'catalog.json');
+  const versionsFile = path.join(dir, 'versions.json');
+  fs.writeFileSync(catalogFile, JSON.stringify({
+    catalog_version: 1,
+    group: { name: 'DUPLICATE TEST' },
+    albums: [
+      { name: 'SAME NAME', release_date: '2025-01-01', album_type: 'EP', cover: '', discs: [{ disc: 1, tracks: ['EP Song'] }] },
+      { name: 'SAME NAME', release_date: '2026-02-02', album_type: 'Single', cover: '', discs: [{ disc: 1, tracks: ['Single Song'] }] },
+    ],
+  }));
+  fs.writeFileSync(versionsFile, JSON.stringify({
+    catalog_version: 1,
+    releases: {
+      'SAME NAME@@2025-01-01@@ep': { album_name: 'SAME NAME', release_date: '2025-01-01', versions: [{ version_name: 'EP Pink', edition_type: 'CD · KR' }] },
+      'SAME NAME@@2026-02-02@@single': { album_name: 'SAME NAME', release_date: '2026-02-02', versions: [{ version_name: 'Single Blue', edition_type: 'CD · KR' }] },
+    },
+  }));
+
+  await importCatalog({ slug: 'duplicate-test', catalogPath: catalogFile, versionsPath: versionsFile, dbPath });
+  const db = open(dbPath);
+  const rows = await new Promise((resolve, reject) => {
+    const raw = new sqlite3.Database(dbPath);
+    raw.all(`SELECT a.release_date,v.version_name FROM albums a JOIN album_versions v ON v.album_id=a.id ORDER BY a.release_date`, (error, values) => {
+      raw.close();
+      if (error) reject(error); else resolve(values);
+    });
+  });
+  assert.deepEqual(rows, [
+    { release_date: '2025-01-01', version_name: 'EP Pink' },
+    { release_date: '2026-02-02', version_name: 'Single Blue' },
+  ]);
+  await db.close();
+  fs.rmSync(dir, { recursive: true, force: true });
+});
