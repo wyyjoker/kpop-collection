@@ -48,10 +48,37 @@ test('MusicBrainz catalog builder emits tracks, independent cover, barcode and p
   assert.equal(catalog.albums[0].name, 'TEST ALBUM');
   assert.equal(catalog.albums[0].discs[0].tracks.length, 2);
   assert.match(catalog.albums[0].cover, /coverartarchive\.org\/release\//);
-  const physical = versions.releases['TEST ALBUM'].versions;
+  const releaseEntry = Object.values(versions.releases)[0];
+  assert.equal(releaseEntry.album_name, 'TEST ALBUM');
+  assert.equal(releaseEntry.release_date, '2026-01-01');
+  const physical = releaseEntry.versions;
   assert.equal(physical.length, 2);
   assert.deepEqual(physical.map((v) => v.version_name), ['Pink Ver.', 'Blue Ver.']);
   assert.deepEqual(physical.map((v) => v.barcode), ['8801234567890', '8801234567891']);
   assert.ok(physical.every((v) => /CD · KR/.test(v.edition_type)));
   assert.ok(physical.every((v) => /front-500/.test(v.cover)));
+});
+
+test('same-title release groups keep separate version catalogs instead of overwriting each other', () => {
+  const ep = release();
+  const single = release({
+    id: '44444444-4444-4444-4444-444444444444',
+    title: 'TEST ALBUM (Single Ver.)',
+    date: '2027-02-02',
+    barcode: '8801234567892',
+    'release-group': {
+      id: '55555555-5555-5555-5555-555555555555',
+      title: 'TEST ALBUM',
+      'primary-type': 'Single',
+      'secondary-types': [],
+      'first-release-date': '2027-02-02',
+    },
+  });
+  const { catalog, versions } = buildCatalog({ name: 'TEST' }, [ep, single]);
+  assert.equal(catalog.albums.length, 2);
+  assert.deepEqual(catalog.albums.map((album) => album.release_date), ['2026-01-01', '2027-02-02']);
+  const entries = Object.values(versions.releases);
+  assert.equal(entries.length, 2);
+  assert.deepEqual(entries.map((entry) => entry.release_date).sort(), ['2026-01-01', '2027-02-02']);
+  assert.ok(entries.every((entry) => entry.album_name === 'TEST ALBUM'));
 });
