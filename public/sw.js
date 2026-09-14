@@ -1,11 +1,13 @@
-const CACHE_NAME = "kpop-collection-shell-v0.7-photos-2";
+const CACHE_NAME = "kpop-collection-shell-v0.5b1";
 const APP_SHELL = [
   "/",
   "/index.html",
   "/scrapbook.css",
-  "/app.js?v=0.7-photos",
+  "/app.js?v=0.5b1",
   "/album-photos.css?v=1",
   "/js/photos.js",
+  "/js/audio.js",
+  "/js/player.js",
   "/reference-masthead.css?v=2",
   "/assets/scrapbook/reference-masthead.png",
   "/js/api.js",
@@ -59,7 +61,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Dynamic collection data and uploaded covers remain network-only.
+  // Dynamic collection data and uploaded user files remain network-only.
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/uploads/"))
     return;
 

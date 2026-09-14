@@ -5,7 +5,21 @@ import audiosSchema from '../drizzle/0002_album_audios.sql';
 import { COLUMNS, EMPTY_PROFILE, fail, validateSnapshot } from './data.mjs';
 
 let engine;
-const getEngine = () => engine ??= initSqlJs();
+function getEngine() {
+  // Emscripten's asm.js build identifies Cloudflare Workers as a web-worker-like
+  // environment and expects `self.location.href`. Workerd intentionally does not
+  // expose Location, so provide the inert base URL sql.js only uses for bootstrap
+  // path detection. The asm.js build is fully bundled and performs no network load.
+  if (!globalThis.location) {
+    try {
+      Object.defineProperty(globalThis, 'location', {
+        value: new URL('https://kpop-collection.invalid/worker'),
+        configurable: true,
+      });
+    } catch {}
+  }
+  return engine ??= initSqlJs();
+}
 function rows(db, table) {
   const result = db.exec(`SELECT * FROM ${table} LIMIT 15001`)[0];
   return result ? result.values.map(values => Object.fromEntries(result.columns.map((column,i)=>[column,values[i]]))) : [];
