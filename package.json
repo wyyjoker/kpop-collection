@@ -1,6 +1,6 @@
 {
   "name": "kpop-collection",
-  "version": "0.5.0-beta.2",
+  "version": "0.5.0-beta.3",
   "private": true,
   "description": "Personal K-pop album collection manager",
   "main": "server.js",
@@ -19,7 +19,7 @@
     "catalog:import": "node scripts/import-catalog.js",
     "catalog:sync": "node scripts/sync-curated-catalogs.js --best-effort",
     "catalog:sync:force": "node scripts/sync-curated-catalogs.js --force --best-effort",
-    "check": "node --check server.js && node --check server-v0.1b.js && node --check scripts/import-catalog.js && node --check scripts/seed-seventeen.js && node --check scripts/sync-curated-catalogs.js && node --check public/app.js && node --check public/js/api.js && node --check public/js/store.js && node --check public/js/components.js && node --check public/js/pages.js && node --check public/js/dialogs.js && node --check public/js/audio.js && node --check public/js/player.js && node --check public/js/version-details.js && node --check public/app-v0.1b.js && node --check public/app-v0.2.js && node --check public/app-v0.3.js && node --check public/app-v0.4.js && node --check public/app-v0.5a.js && node --check public/app-v0.5a-polish.js && node --check public/app-v0.5a-hero.js && node --check public/app-v0.5a-seventeen.js && node --check public/sw.js"
+    "check": "node --check server.js && node --check server-v0.1b.js && node --check scripts/import-catalog.js && node --check scripts/seed-seventeen.js && node --check scripts/sync-curated-catalogs.js && node --check sites/catalog-sync.mjs && node --check sites/worker-entry.mjs && node --check public/app.js && node --check public/js/api.js && node --check public/js/store.js && node --check public/js/components.js && node --check public/js/pages.js && node --check public/js/dialogs.js && node --check public/js/audio.js && node --check public/js/player.js && node --check public/js/version-details.js && node --check public/js/catalog-sync-ui.js && node --check public/app-v0.1b.js && node --check public/app-v0.2.js && node --check public/app-v0.3.js && node --check public/app-v0.4.js && node --check public/app-v0.5a.js && node --check public/app-v0.5a-polish.js && node --check public/app-v0.5a-hero.js && node --check public/app-v0.5a-seventeen.js && node --check public/sw.js"
   },
   "engines": {
     "node": ">=22"
