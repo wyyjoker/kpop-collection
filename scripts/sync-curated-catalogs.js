@@ -189,6 +189,10 @@ async function browseReleases(artistId) {
   return releases;
 }
 
+function releaseVersionKey(albumName, releaseDate, releaseGroupId) {
+  return `${albumName}@@${releaseDate || 'undated'}@@${releaseGroupId}`;
+}
+
 function buildCatalog(artist, releases) {
   const relevant = releases.filter(isRelevantRelease);
   const groups = new Map();
@@ -206,9 +210,10 @@ function buildCatalog(artist, releases) {
     const canonical = physicalReleases[0];
     const artRelease = physicalReleases.find((release) => release['cover-art-archive']?.front) || canonical;
     const albumName = releaseGroup.title || canonical.title;
+    const releaseDate = releaseGroup['first-release-date'] || earliestDate(physicalReleases);
     const album = {
       name: albumName,
-      release_date: releaseGroup['first-release-date'] || earliestDate(physicalReleases),
+      release_date: releaseDate,
       album_type: typeLabel(releaseGroup) || 'Physical Release',
       cover: coverFor(artRelease),
       notes: `MusicBrainz release group ${releaseGroup.id}`,
@@ -218,7 +223,10 @@ function buildCatalog(artist, releases) {
     albums.push(album);
 
     const names = uniqueVersionNames(albumName, physicalReleases);
-    versionReleases[albumName] = {
+    versionReleases[releaseVersionKey(albumName, releaseDate, releaseGroup.id)] = {
+      album_name: albumName,
+      release_date: releaseDate,
+      release_group_id: releaseGroup.id,
       source: `https://musicbrainz.org/release-group/${releaseGroup.id}`,
       versions: physicalReleases.map((release, index) => {
         const formats = mediaFormats(release).filter((f) => !DIGITAL_ONLY.test(f));
@@ -301,4 +309,4 @@ async function main() {
 
 if (require.main === module) main().catch((error) => { console.error(error); process.exitCode = 1; });
 
-module.exports = { buildCatalog, isRelevantRelease, versionBaseName, validBarcode };
+module.exports = { buildCatalog, isRelevantRelease, versionBaseName, validBarcode, releaseVersionKey };
