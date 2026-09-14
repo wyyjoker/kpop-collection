@@ -1,4 +1,4 @@
-import { Miniflare, Request as MiniflareRequest } from 'miniflare';
+import { Miniflare } from 'miniflare';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -48,13 +48,50 @@ async function assetBinding(request) {
   }
 }
 
+function joinBytes(parts) {
+  const size = parts.reduce((sum, part) => sum + part.length, 0);
+  const output = new Uint8Array(size);
+  let offset = 0;
+  for (const part of parts) {
+    output.set(part, offset);
+    offset += part.length;
+  }
+  return output;
+}
+
+async function encodeFormData(form) {
+  // Miniflare's Node-side dispatch bridge does not currently serialize the global
+  // FormData implementation with a multipart Content-Type. Encode it explicitly so
+  // native workerd sees the same request bytes and boundary a browser would send.
+  const boundary = `----kpopCollection${crypto.randomUUID().replaceAll('-', '')}`;
+  const encoder = new TextEncoder();
+  const chunks = [];
+  for (const [name, value] of form.entries()) {
+    chunks.push(encoder.encode(`--${boundary}\r\n`));
+    const safeName = String(name).replace(/["\r\n]/g, '_');
+    if (typeof value === 'string') {
+      chunks.push(encoder.encode(`Content-Disposition: form-data; name="${safeName}"\r\n\r\n${value}\r\n`));
+      continue;
+    }
+    const fileName = String(value.name || 'upload.bin').replace(/["\r\n]/g, '_');
+    const type = value.type || 'application/octet-stream';
+    chunks.push(encoder.encode(`Content-Disposition: form-data; name="${safeName}"; filename="${fileName}"\r\nContent-Type: ${type}\r\n\r\n`));
+    chunks.push(new Uint8Array(await value.arrayBuffer()));
+    chunks.push(encoder.encode('\r\n'));
+  }
+  chunks.push(encoder.encode(`--${boundary}--\r\n`));
+  return { body: joinBytes(chunks), contentType: `multipart/form-data; boundary=${boundary}` };
+}
+
 function normalizeDispatch(mf) {
   const dispatch = mf.dispatchFetch.bind(mf);
-  // Build multipart requests with Miniflare's Request implementation so its
-  // HTTP bridge keeps the generated boundary and Content-Type intact.
-  mf.dispatchFetch = (input, init) => {
+  mf.dispatchFetch = async (input, init) => {
     if (init?.body instanceof FormData) {
-      return dispatch(new MiniflareRequest(input, init));
+      const { body, contentType } = await encodeFormData(init.body);
+      const headers = new Headers(init.headers || {});
+      headers.set('content-type', contentType);
+      headers.set('content-length', String(body.length));
+      return dispatch(input, { ...init, headers, body });
     }
     return dispatch(input, init);
   };
