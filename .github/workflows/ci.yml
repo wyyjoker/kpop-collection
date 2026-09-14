@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feature/v0.1b, feature/v0.2, feature/v0.3, feature/v0.4, feature/v0.5a, feature/v0.5a-polish, feature/v0.5a-hero-collage, feature/seventeen-catalog]
+    branches: [main, feature/v0.1b, feature/v0.2, feature/v0.3, feature/v0.4, feature/v0.5a, feature/v0.5a-polish, feature/v0.5a-hero-collage, feature/seventeen-catalog, feature/v0.5b-seventeen-versions]
   pull_request:
     branches: [main]
 
@@ -39,12 +39,16 @@ jobs:
           node -e "JSON.parse(require('fs').readFileSync('public/manifest.webmanifest', 'utf8'))"
           node - <<'NODE'
           const catalog = require('./public/data/seventeen-catalog.json');
+          const versions = require('./public/data/seventeen-versions.json');
           const tracks = catalog.albums.reduce((sum, album) => sum + (album.discs || []).reduce((discSum, disc) => discSum + (disc.tracks || []).length, 0), 0);
+          const versionCount = Object.values(versions.releases || {}).reduce((sum, release) => sum + (release.versions || []).length, 0);
           if (catalog.group.name !== 'SEVENTEEN') throw new Error('SEVENTEEN group metadata missing');
           if (catalog.albums.length < 32) throw new Error(`Expected at least 32 SEVENTEEN physical releases, found ${catalog.albums.length}`);
           if (tracks < 250) throw new Error(`Track catalog unexpectedly small: ${tracks}`);
+          if (Object.keys(versions.releases || {}).length !== catalog.albums.length) throw new Error('Every bundled SEVENTEEN release must have a physical-version catalog entry');
+          if (versionCount < 100) throw new Error(`Physical-version catalog unexpectedly small: ${versionCount}`);
           if (catalog.albums.some((album) => !album.cover || !album.release_date || !(album.discs || []).length)) throw new Error('A release is missing cover/date/tracklist data');
-          console.log(`Validated ${catalog.albums.length} SEVENTEEN releases / ${tracks} tracks`);
+          console.log(`Validated ${catalog.albums.length} SEVENTEEN releases / ${tracks} tracks / ${versionCount} physical versions`);
           NODE
           test -f public/icons/icon-192.png
           test -f public/icons/icon-512.png
@@ -65,8 +69,10 @@ jobs:
           test -f public/v0.5a-polish.css
           test -f public/v0.5a-hero.css
           test -f public/v0.5a-seventeen.css
+          test -f scripts/import-catalog.js
           test -f scripts/seed-seventeen.js
           test -f public/data/seventeen-catalog.json
+          test -f public/data/seventeen-versions.json
           test -f public/assets/scrapbook/paper-grid.svg
           test -f public/assets/scrapbook/doodle-heart.svg
           test -f public/assets/scrapbook/doodle-star.svg
@@ -80,9 +86,11 @@ jobs:
         shell: bash
         run: |
           rm -f /tmp/kpop-svt-test.db
-          DB_PATH=/tmp/kpop-svt-test.db node scripts/seed-seventeen.js
+          DB_PATH=/tmp/kpop-svt-test.db node scripts/seed-seventeen.js --with-versions
           node - <<'NODE'
           const sqlite3 = require('sqlite3').verbose();
+          const versions = require('./public/data/seventeen-versions.json');
+          const expectedVersions = Object.values(versions.releases || {}).reduce((sum, release) => sum + (release.versions || []).length, 0);
           const db = new sqlite3.Database('/tmp/kpop-svt-test.db');
           db.get(`SELECT COUNT(*) albums FROM albums a JOIN groups g ON g.id=a.group_id WHERE g.name='SEVENTEEN'`, (error, row) => {
             if (error) throw error;
@@ -90,8 +98,16 @@ jobs:
             db.get('SELECT COUNT(*) tracks FROM album_tracks', (trackError, trackRow) => {
               if (trackError) throw trackError;
               if (trackRow.tracks < 250) throw new Error(`Seeded only ${trackRow.tracks} tracks`);
-              console.log(`Seeded ${row.albums} releases / ${trackRow.tracks} tracks`);
-              db.close();
+              db.get('SELECT COUNT(*) versions FROM album_versions', (versionError, versionRow) => {
+                if (versionError) throw versionError;
+                if (versionRow.versions !== expectedVersions) throw new Error(`Seeded ${versionRow.versions}/${expectedVersions} physical versions`);
+                db.get("SELECT COUNT(*) missing FROM collection WHERE status='missing' AND quantity=0", (collectionError, collectionRow) => {
+                  if (collectionError) throw collectionError;
+                  if (collectionRow.missing !== expectedVersions) throw new Error('Catalog versions must default to missing without claiming ownership');
+                  console.log(`Seeded ${row.albums} releases / ${trackRow.tracks} tracks / ${versionRow.versions} physical versions`);
+                  db.close();
+                });
+              });
             });
           });
           NODE
@@ -115,6 +131,7 @@ jobs:
               curl -fsS http://127.0.0.1:3000/app-v0.5a-seventeen.js >/dev/null
               curl -fsS http://127.0.0.1:3000/v0.5a-seventeen.css >/dev/null
               curl -fsS http://127.0.0.1:3000/data/seventeen-catalog.json >/dev/null
+              curl -fsS http://127.0.0.1:3000/data/seventeen-versions.json >/dev/null
               curl -fsS http://127.0.0.1:3000/api/groups | grep -q 'SEVENTEEN'
               exit 0
             fi

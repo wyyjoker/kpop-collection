@@ -11,12 +11,13 @@
     "test:sites:workers": "node scripts/test-sites-workers.mjs",
     "db:generate": "drizzle-kit generate",
     "test": "node --test tests/*.test.js",
-    "prestart": "node scripts/seed-seventeen.js",
+    "prestart": "node scripts/seed-seventeen.js --with-versions",
     "start": "node server.js",
-    "predev": "node scripts/seed-seventeen.js",
+    "predev": "node scripts/seed-seventeen.js --with-versions",
     "dev": "node --watch server.js",
-    "seed:seventeen": "node scripts/seed-seventeen.js --force",
-    "check": "node --check server.js && node --check server-v0.1b.js && node --check scripts/seed-seventeen.js && node --check public/app.js && node --check public/js/api.js && node --check public/js/store.js && node --check public/js/components.js && node --check public/js/pages.js && node --check public/js/dialogs.js && node --check public/js/audio.js && node --check public/js/player.js && node --check public/app-v0.1b.js && node --check public/app-v0.2.js && node --check public/app-v0.3.js && node --check public/app-v0.3-bridge.js && node --check public/app-v0.4.js && node --check public/app-v0.5a.js && node --check public/app-v0.5a-polish.js && node --check public/app-v0.5a-hero.js && node --check public/app-v0.5a-seventeen.js && node --check public/sw.js"
+    "seed:seventeen": "node scripts/seed-seventeen.js --with-versions --force",
+    "catalog:import": "node scripts/import-catalog.js",
+    "check": "node --check server.js && node --check server-v0.1b.js && node --check scripts/import-catalog.js && node --check scripts/seed-seventeen.js && node --check public/app.js && node --check public/js/api.js && node --check public/js/store.js && node --check public/js/components.js && node --check public/js/pages.js && node --check public/js/dialogs.js && node --check public/js/audio.js && node --check public/js/player.js && node --check public/app-v0.1b.js && node --check public/app-v0.2.js && node --check public/app-v0.3.js && node --check public/app-v0.3-bridge.js && node --check public/app-v0.4.js && node --check public/app-v0.5a.js && node --check public/app-v0.5a-polish.js && node --check public/app-v0.5a-hero.js && node --check public/app-v0.5a-seventeen.js && node --check public/sw.js"
   },
   "engines": {
     "node": ">=22"
