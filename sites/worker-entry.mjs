@@ -22,8 +22,12 @@ async function ensureInitialized(request, env, ctx) {
   const url = new URL(request.url);
   url.pathname = '/api/library';
   url.search = '';
-  const initRequest = new Request(url, { method: 'GET', headers: request.headers });
-  const response = await worker.fetch(initRequest, env, ctx);
+  const headers = new Headers();
+  for (const name of ['oai-authenticated-user-id', 'oai-authenticated-user-email']) {
+    const value = request.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+  const response = await worker.fetch(new Request(url, { method: 'GET', headers }), env, ctx);
   if (!response.ok) throw Object.assign(new Error('云端资料库初始化失败。'), { status: response.status });
 }
 
@@ -45,9 +49,7 @@ export default {
         if (request.headers.get('sec-fetch-site') === 'cross-site' || origin && origin !== url.origin) return json({ error: '不允许跨站同步资料库。' }, 403);
         if (Number(request.headers.get('content-length') || 0) > 4096) return json({ error: '同步请求过大。' }, 413);
         let body = {};
-        if (request.headers.get('content-length') !== '0') {
-          try { body = await request.json(); } catch { body = {}; }
-        }
+        try { body = await request.json(); } catch { body = {}; }
         const result = await syncCatalogArtist(env.DB, sync[1], { force: body?.force === true });
         return json(result);
       }
