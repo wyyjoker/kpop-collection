@@ -86,7 +86,7 @@ jobs:
         shell: bash
         run: |
           rm -f /tmp/kpop-svt-test.db
-          DB_PATH=/tmp/kpop-svt-test.db node scripts/seed-seventeen.js
+          DB_PATH=/tmp/kpop-svt-test.db node scripts/seed-seventeen.js --with-versions
           node - <<'NODE'
           const sqlite3 = require('sqlite3').verbose();
           const versions = require('./public/data/seventeen-versions.json');
